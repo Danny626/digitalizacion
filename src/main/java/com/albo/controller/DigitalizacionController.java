@@ -15,17 +15,19 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.albo.model.soa.Inventario;
-import com.albo.service.soa.IInventarioService;
+import com.albo.soa.model.Inventario;
+import com.albo.soa.service.IInventarioService;
 
 @RestController
 @RequestMapping("/digital")
@@ -42,13 +44,28 @@ public class DigitalizacionController {
 
 	private Set<String> archivos = new HashSet<String>();
 
+	@GetMapping(value = "/prueba", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<?> inventarioPorParte() {
+
+		Inventario inventario = new Inventario();
+		inventario = inventarioService.buscarPorParte("422202133888EUKOJPCL1706279", "2021");
+
+		JSONObject jo = new JSONObject(inventario);
+
+		System.out.println(jo);
+
+		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
+	}
+
 	/**
 	 * Proceso de digitalización
 	 * 
-	 * @param gestion    gestión del proceso de digitalización
-	 * @param trimestre  trimestre del proceso de digitalización
-	 * @param recinto    recinto q realiza la digitalización
-	 * @param directorio directorio donde se encuentran los archivos digitalizados
+	 * @param gestion           gestión del proceso de digitalización
+	 * @param trimestre         trimestre del proceso de digitalización
+	 * @param recinto           recinto q realiza la digitalización
+	 * @param directorioOrigen  directorio donde se encuentran los archivos
+	 *                          digitalizados
+	 * @param directorioDestino directorio donde se copiaran los nuevos archivos
 	 */
 	@PostMapping(value = "/procesar", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> procesar(@RequestParam("gestion") String gestion,
@@ -57,7 +74,7 @@ public class DigitalizacionController {
 			@RequestParam("directorioDestino") String directorioDestino) {
 
 		/* controlamos que los parametros de entrada no esten vacios */
-		if (gestion == "" || trimestre == "" || recinto == "") {
+		if (gestion == "" || trimestre == "" || recinto == "" || directorioOrigen == "" || directorioDestino == "") {
 			return new ResponseEntity<>("Parametros de entrada incorrectos", HttpStatus.BAD_REQUEST);
 		}
 
@@ -71,8 +88,6 @@ public class DigitalizacionController {
 
 		try {
 
-			Inventario inventario = new Inventario();
-
 			// cargamos los archivos del directorio seleccionado
 			this.archivos = this.listFilesUsingFilesList(directorioOrigen);
 
@@ -85,8 +100,6 @@ public class DigitalizacionController {
 				}
 
 				// copiamos y renombramos el archivo de acuerdo a su tipo
-				inventario = inventarioService.buscarPorParte("422202133888EUKOJPCL1706279", "2021");
-
 				// caso Inventarios
 				if (nombreArch.charAt(0) == 'I') {
 					this.procesarInventario(nombreArch, directorioOrigen, pathDestino);
@@ -94,7 +107,7 @@ public class DigitalizacionController {
 
 			}
 
-			return new ResponseEntity<Inventario>(inventario, HttpStatus.OK);
+			return new ResponseEntity<Boolean>(true, HttpStatus.OK);
 
 		} catch (Exception e) {
 			return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -133,6 +146,9 @@ public class DigitalizacionController {
 	public void procesarInventario(String nombreArchivoOrigen, String pathOrigen, String pathDestino) {
 		// buscamos el parte correspondiente al nro de inventario dado en el
 		// nombreArchivoOrigen
+		Inventario inventario = new Inventario();
+		inventario = inventarioService.buscarPorNroInventario(nombreArchivoOrigen, pathOrigen, pathDestino);
+
 		String nuevoNombre = "";
 
 		try {
