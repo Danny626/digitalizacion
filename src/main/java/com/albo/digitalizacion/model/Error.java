@@ -16,7 +16,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
 @Entity
-@Table(name = "error", schema = "PUBLIC")
+@Table(name = "error", schema = "public")
 public class Error implements Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -26,26 +26,26 @@ public class Error implements Serializable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "E3_COD", nullable = false, length = 5)
-	private String E3_COD;
+	@Column(name = "e3_cod", nullable = false, length = 5)
+	private String e3Cod;
 
-	@Column(name = "TIPO_OP", length = 2)
-	private String TIPO_OP;
+	@Column(name = "tipo_op", length = 2)
+	private String tipoOp;
 
-	@Column(name = "TIPO_ARCH", length = 3)
-	private String TIPO_ARCH;
-
-	@ManyToOne
-	@JoinColumn(name = "TIPO_ERROR", nullable = false, referencedColumnName = "COD_ERROR")
-	private TipoError TIPO_ERROR;
+	@Column(name = "tipo_arch", length = 3)
+	private String tipoArch;
 
 	@ManyToOne
-	@JoinColumn(name = "NOM_ARCHIVO", nullable = false, referencedColumnName = "NOM_ARCHIVO")
-	private Archivo NOM_ARCHIVO;
+	@JoinColumn(name = "tipo_error", nullable = false, referencedColumnName = "cod_error")
+	private TipoError tipoError;
+
+	@ManyToOne
+	@JoinColumn(name = "archivo", nullable = false, referencedColumnName = "id")
+	private Archivo archivo;
 
 	@JsonSerialize(using = ToStringSerializer.class)
-	@Column(name = "FECPRO")
-	private LocalDateTime FECPRO;
+	@Column(name = "fec_pro")
+	private LocalDateTime fecPro;
 
 	public Long getId() {
 		return id;
@@ -55,52 +55,52 @@ public class Error implements Serializable {
 		this.id = id;
 	}
 
-	public String getE3_COD() {
-		return E3_COD;
+	public String getE3Cod() {
+		return e3Cod;
 	}
 
-	public void setE3_COD(String e3_COD) {
-		E3_COD = e3_COD;
+	public void setE3Cod(String e3Cod) {
+		this.e3Cod = e3Cod;
 	}
 
-	public String getTIPO_OP() {
-		return TIPO_OP;
+	public String getTipoOp() {
+		return tipoOp;
 	}
 
-	public void setTIPO_OP(String tIPO_OP) {
-		TIPO_OP = tIPO_OP;
+	public void setTipoOp(String tipoOp) {
+		this.tipoOp = tipoOp;
 	}
 
-	public String getTIPO_ARCH() {
-		return TIPO_ARCH;
+	public String getTipoArch() {
+		return tipoArch;
 	}
 
-	public void setTIPO_ARCH(String tIPO_ARCH) {
-		TIPO_ARCH = tIPO_ARCH;
+	public void setTipoArch(String tipoArch) {
+		this.tipoArch = tipoArch;
 	}
 
-	public LocalDateTime getFECPRO() {
-		return FECPRO;
+	public TipoError getTipoError() {
+		return tipoError;
 	}
 
-	public void setFECPRO(LocalDateTime fECPRO) {
-		FECPRO = fECPRO;
+	public void setTipoError(TipoError tipoError) {
+		this.tipoError = tipoError;
 	}
 
-	public TipoError getTIPO_ERROR() {
-		return TIPO_ERROR;
+	public LocalDateTime getFecPro() {
+		return fecPro;
 	}
 
-	public void setTIPO_ERROR(TipoError tIPO_ERROR) {
-		TIPO_ERROR = tIPO_ERROR;
+	public void setFecPro(LocalDateTime fecPro) {
+		this.fecPro = fecPro;
 	}
 
-	public Archivo getNOM_ARCHIVO() {
-		return NOM_ARCHIVO;
+	public Archivo getArchivo() {
+		return archivo;
 	}
 
-	public void setNOM_ARCHIVO(Archivo nOM_ARCHIVO) {
-		NOM_ARCHIVO = nOM_ARCHIVO;
+	public void setArchivo(Archivo archivo) {
+		this.archivo = archivo;
 	}
 
 }

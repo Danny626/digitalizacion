@@ -7,8 +7,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.HashSet;
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,6 +29,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.albo.digitalizacion.dto.ArchivoResultado;
+import com.albo.digitalizacion.model.Archivo;
+import com.albo.digitalizacion.model.General;
+import com.albo.digitalizacion.service.IArchivoService;
+import com.albo.digitalizacion.service.IGeneralService;
 import com.albo.soa.model.Inventario;
 import com.albo.soa.service.IInventarioService;
 
@@ -39,10 +47,16 @@ public class DigitalizacionController {
 
 	public static final String ANSI_RED = "\u001B[31m";
 
+	public static final String nitConcesionario = "120585022";
+
 	@Autowired
 	private IInventarioService inventarioService;
 
-	private Set<String> archivos = new HashSet<String>();
+	@Autowired
+	private IArchivoService archivoService;
+
+	@Autowired
+	private IGeneralService generalService;
 
 	@GetMapping(value = "/prueba", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> inventarioPorParte() {
@@ -70,54 +84,74 @@ public class DigitalizacionController {
 	@PostMapping(value = "/procesar", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> procesar(@RequestParam("gestion") String gestion,
 			@RequestParam("trimestre") String trimestre, @RequestParam("recinto") String recinto,
+			@RequestParam("fechaProceso") String fechaProceso, @RequestParam("mesesAtras") String mesesAtras,
 			@RequestParam("directorioOrigen") String directorioOrigen,
 			@RequestParam("directorioDestino") String directorioDestino) {
 
 		/* controlamos que los parametros de entrada no esten vacios */
-		if (gestion == "" || trimestre == "" || recinto == "" || directorioOrigen == "" || directorioDestino == "") {
+		if (gestion == "" || trimestre == "" || recinto == "" || directorioOrigen == "" || directorioDestino == ""
+				|| fechaProceso == "" || mesesAtras == "") {
 			return new ResponseEntity<>("Parametros de entrada incorrectos", HttpStatus.BAD_REQUEST);
 		}
 
 		// creamos el path de destino del proceso de digitalización para el recinto en
 		// cuestión
-		String pathDestino = this.creaPathDestino(recinto, trimestre, directorioDestino);
+		String pathDestino = this.creaPathDestino(recinto, trimestre, directorioDestino, gestion);
 
 		if (pathDestino == "error") {
 			System.exit(1);
+			return new ResponseEntity<>("Error creando el Path Destino", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
 		try {
 
 			// cargamos los archivos del directorio seleccionado
-			this.archivos = this.listFilesUsingFilesList(directorioOrigen);
+			List<String> listaArchivos = new ArrayList<String>();
+			listaArchivos = this.listFilesUsingFilesList(directorioOrigen);
+			Collections.sort(listaArchivos);
 
 			// recorremos los archivos cargados para procesarlos
-			for (String nombreArch : this.archivos) {
+			for (String nombreArch : listaArchivos) {
 				// verificamos la nomenclatura
 				// TODO mejorar o no la nomenclatura o solo mencionarlos
 				if (!this.revisaNomenclatura(nombreArch)) {
 					System.exit(1);
+					return new ResponseEntity<>("Error en la nomenclaturadel archivo: " + nombreArch,
+							HttpStatus.INTERNAL_SERVER_ERROR);
 				}
 
-				// copiamos y renombramos el archivo de acuerdo a su tipo
-				// caso Inventarios
+				// procesamos el archivo de acuerdo a su tipo
+				// -- Inventario
 				if (nombreArch.charAt(0) == 'I') {
-					this.procesarInventario(nombreArch, directorioOrigen, pathDestino);
+
+					LocalDateTime fechaProcesoFin = this.fechaStringToDate(fechaProceso + " 23:59:59");
+
+					ArchivoResultado archivoResultado = this.copiarRenombrarArchivoInventario(nombreArch,
+							directorioOrigen, pathDestino, recinto, fechaProceso, Integer.parseInt(mesesAtras),
+							fechaProcesoFin);
+
+					Archivo archivo = this.registrarTablaArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
+							fechaProcesoFin, directorioOrigen, pathDestino);
+
+					General general = this.registrarTablaGeneral(archivoResultado.getTipoDocArchivo(),
+							archivoResultado.getNuevoNombreArchivo(), archivoResultado.getInventario().getInvAduana(),
+							archivoResultado.getInventario().getInvParte(),
+							archivoResultado.getInventario().getInvFechaAnpr(), fechaProcesoFin, archivo);
 				}
 
 			}
 
-			return new ResponseEntity<Boolean>(true, HttpStatus.OK);
+			return new ResponseEntity<String>("Archivos procesados: " + listaArchivos.size(), HttpStatus.OK);
 
 		} catch (Exception e) {
-			return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+			return new ResponseEntity<>(e, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
 	}
 
 	/** Creamos el path de destino donde se encuentran los archivos renombrados **/
-	public String creaPathDestino(String recinto, String trimestre, String directorioDestino) {
-		String destino = directorioDestino + "//" + recinto + "//" + trimestre;
+	public String creaPathDestino(String recinto, String trimestre, String directorioDestino, String gestion) {
+		String destino = directorioDestino + "//" + gestion + "//" + trimestre + "//" + recinto;
 		File pathDestino = new File(destino);
 		if (!pathDestino.exists()) {
 			if (pathDestino.mkdirs()) {
@@ -128,7 +162,7 @@ public class DigitalizacionController {
 				return "error";
 			}
 		}
-		return "existe";
+		return destino;
 	}
 
 	/** función q revisa la nomenclatura del archivo **/
@@ -141,27 +175,101 @@ public class DigitalizacionController {
 	}
 
 	/**
-	 * función q copia archivos de inventarios(I000117-901.TIF) renombrandolos
+	 * función q copia archivos de inventarios(I000117-901.TIF) con un nuevo nombre
+	 * (invParte modificado)
 	 **/
-	public void procesarInventario(String nombreArchivoOrigen, String pathOrigen, String pathDestino) {
-		// buscamos el parte correspondiente al nro de inventario dado en el
-		// nombreArchivoOrigen
+	public ArchivoResultado copiarRenombrarArchivoInventario(String nombreArchivoOrigen, String pathOrigen,
+			String pathDestino, String invRecinto, String fechaProceso, Integer mesesAtras,
+			LocalDateTime fechaProcesoFin) {
+
+		// obtenemos el nroInv del nombreArchivoOrigen
+		String[] nombreArchivoPartido = nombreArchivoOrigen.split("\\.");
+		String[] numeroNombreArchivo = nombreArchivoPartido[0].split("-");
+		String nroInventario = numeroNombreArchivo[0].replace("I", "");
+
+		// armamos la fecha de proceso inicial, ajustandola n meses atrás
+		LocalDateTime fechaProcesoInicio = this.fechaStringToDate(fechaProceso + " 00:00:00");
+		fechaProcesoInicio = fechaProcesoInicio.minusMonths(mesesAtras);
+
+		// buscamos el parte correspondiente al nro de inventario en un intervalo de
+		// tiempo de inventarios registrados en bd (invFecha)
 		Inventario inventario = new Inventario();
-		inventario = inventarioService.buscarPorNroInventario(nombreArchivoOrigen, pathOrigen, pathDestino);
+		inventario = inventarioService.buscarPorNroInventario(nroInventario, invRecinto, fechaProcesoInicio,
+				fechaProcesoFin);
 
-		String nuevoNombre = "";
+		// armamos el nuevo nombre q tendrá el archivo copiado
+		String nuevoNombreArchivo = inventario.getInvGestion() + inventario.getInvAduana() + inventario.getInvNroreg()
+				+ inventario.getInvEmbarque() + "-" + numeroNombreArchivo[1] + ".tif";
 
+		// copiamos el archivo co su nuevo nombre
 		try {
 			Path origenPath = Paths.get(pathOrigen + "//" + nombreArchivoOrigen);
-			Path destinoPath = Paths.get(pathDestino + "//" + nuevoNombre);
+			Path destinoPath = Paths.get(pathDestino + "//" + nuevoNombreArchivo);
 
-			// sobreescribir el fichero de destino si existe y lo copia
+			// NOTA. sobreescribe el fichero de destino si ya existe en el destino
 			Files.copy(origenPath, destinoPath, StandardCopyOption.REPLACE_EXISTING);
 		} catch (FileNotFoundException ex) {
 			LOGGER.log(Level.ERROR, ex.getMessage());
 		} catch (IOException ex) {
 			LOGGER.log(Level.ERROR, ex.getMessage());
 		}
+
+		ArchivoResultado archivoResultado = new ArchivoResultado();
+		archivoResultado.setInventario(inventario);
+		archivoResultado.setNuevoNombreArchivo(nuevoNombreArchivo);
+		archivoResultado.setTipoDocArchivo(nuevoNombreArchivo);
+
+		return archivoResultado;
+	}
+
+	/**
+	 * función que registra en la tabla Archivo de la bd Digitalización el archivo
+	 * procesado
+	 * 
+	 * @return
+	 */
+	public Archivo registrarTablaArchivo(String nombreArchivoOrigen, String nuevoNombreArchivo,
+			LocalDateTime fechaProceso, String pathOrigen, String pathDestino) {
+
+		Archivo archivo = new Archivo();
+		archivo.setNomArchivo(nuevoNombreArchivo);
+		archivo.setFecPro(fechaProceso);
+		archivo.setOrigen(pathOrigen + "//" + nombreArchivoOrigen);
+		archivo.setDestin(pathDestino + "//" + nuevoNombreArchivo);
+
+		return this.archivoService.saveOrUpdate(archivo);
+	}
+
+	/**
+	 * función que registra en la tabla General de la bd Digitalización el archivo
+	 * procesado
+	 * 
+	 * @return
+	 */
+	public General registrarTablaGeneral(String tipoDoc, String nuevoNombreArchivo, String codAduana, String tramite,
+			LocalDateTime fechaEmision, LocalDateTime fechaProceso, Archivo archivo) {
+
+		General general = new General();
+		general.setCnsCodConc(nitConcesionario);
+		general.setCnsTipoDoc(tipoDoc);
+		general.setCnsEmisor(nitConcesionario);
+		general.setArchivo(archivo);
+		general.setCnsAduTra(codAduana);
+		general.setCnsNroTra(tramite);
+		general.setCnsFechaEmi(fechaEmision);
+		general.setCnsFechaPro(fechaProceso);
+		this.generalService.saveOrUpdate(general);
+
+		return this.generalService.saveOrUpdate(general);
+	}
+
+	/**
+	 * funcion q convierte un texto con la fecha a LocalDateTime
+	 */
+	public LocalDateTime fechaStringToDate(String cadenaFecha) {
+		DateTimeFormatter formatoFecha = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+		LocalDateTime fechaconvertida = LocalDateTime.parse(cadenaFecha, formatoFecha);
+		return fechaconvertida;
 	}
 
 	/**
@@ -169,38 +277,38 @@ public class DigitalizacionController {
 	 * salida(C000030-B74.tif) y constancias de entrega(S002928-932.TIF)
 	 * renombrandolos
 	 **/
-	public void copiarRenombrarArchivo(String pathOrigen, String pathDestino, String nombreArchivoOrigen) {
-		// caso Inventarios
-		if (nombreArchivoOrigen.charAt(0) == 'I') {
-			try {
-				Path origenPath = Paths.get(pathOrigen + "//" + nombreArchivoOrigen);
-				Path destinoPath = Paths.get(pathDestino + "//" + nombreArchivoOrigen);
-				// sobreescribir el fichero de destino si existe y lo copia
-				Files.copy(origenPath, destinoPath, StandardCopyOption.REPLACE_EXISTING);
-			} catch (FileNotFoundException ex) {
-				LOGGER.log(Level.ERROR, ex.getMessage());
-			} catch (IOException ex) {
-				LOGGER.log(Level.ERROR, ex.getMessage());
-			}
-		}
-
-		// caso Certificados de salida
-		if (nombreArchivoOrigen.charAt(0) == 'C') {
-
-		}
-
-		// caso Constancias de entrega
-		if (nombreArchivoOrigen.charAt(0) == 'S') {
-
-		}
-
-	}
+//	public void copiarRenombrarArchivo(String pathOrigen, String pathDestino, String nombreArchivoOrigen) {
+//		// caso Inventarios
+//		if (nombreArchivoOrigen.charAt(0) == 'I') {
+//			try {
+//				Path origenPath = Paths.get(pathOrigen + "//" + nombreArchivoOrigen);
+//				Path destinoPath = Paths.get(pathDestino + "//" + nombreArchivoOrigen);
+//				// sobreescribir el fichero de destino si existe y lo copia
+//				Files.copy(origenPath, destinoPath, StandardCopyOption.REPLACE_EXISTING);
+//			} catch (FileNotFoundException ex) {
+//				LOGGER.log(Level.ERROR, ex.getMessage());
+//			} catch (IOException ex) {
+//				LOGGER.log(Level.ERROR, ex.getMessage());
+//			}
+//		}
+//
+//		// caso Certificados de salida
+//		if (nombreArchivoOrigen.charAt(0) == 'C') {
+//
+//		}
+//
+//		// caso Constancias de entrega
+//		if (nombreArchivoOrigen.charAt(0) == 'S') {
+//
+//		}
+//
+//	}
 
 	/** función q devuelve un listado de los archivos en un directorio **/
-	public Set<String> listFilesUsingFilesList(String dir) throws IOException {
+	public List<String> listFilesUsingFilesList(String dir) throws IOException {
 		try (Stream<Path> stream = Files.list(Paths.get(dir))) {
 			return stream.filter(file -> !Files.isDirectory(file)).map(Path::getFileName).map(Path::toString)
-					.collect(Collectors.toSet());
+					.collect(Collectors.toList());
 		}
 	}
 

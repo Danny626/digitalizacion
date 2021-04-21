@@ -1,5 +1,6 @@
 package com.albo.soa.service.impl;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,8 +47,9 @@ public class InventarioServiceImpl implements IInventarioService {
 	}
 
 	@Override
-	public Inventario buscarPorNroInventario(String invNro, String gestion, String invAduana) {
-		return inventarioDao.buscarPorNroInventario(invNro, gestion, invAduana);
+	public Inventario buscarPorNroInventario(String invNro, String invRecinto, LocalDateTime fechaProcesoInicio,
+			LocalDateTime fechaProcesoFin) {
+		return inventarioDao.buscarPorNroInventario(invNro, invRecinto, fechaProcesoInicio, fechaProcesoFin);
 	}
 
 }

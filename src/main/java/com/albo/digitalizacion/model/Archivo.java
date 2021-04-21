@@ -9,6 +9,8 @@ import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
@@ -18,68 +20,68 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
 @Entity
-@Table(name = "archivo", schema = "PUBLIC")
+@Table(name = "archivo", schema = "public")
 public class Archivo implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-//	@Id
-//	@Column(name = "id", nullable = false, unique = true)
-//	@GeneratedValue(strategy = GenerationType.IDENTITY)
-//	private Long id;
-
 	@Id
-	@Column(name = "NOM_ARCHIVO", nullable = false, unique = true, length = 100)
-	private String NOM_ARCHIVO;
+	@Column(name = "id", nullable = false, unique = true)
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-	@Column(name = "ORIGEN", nullable = false, length = 100)
-	private String ORIGEN;
+	// archivo destino
+	@Column(name = "nom_archivo", nullable = false, length = 100)
+	private String nomArchivo;
 
-	@Column(name = "DESTIN", length = 100)
-	private String DESTIN;
+	@Column(name = "origen", nullable = false, length = 100)
+	private String origen;
+
+	@Column(name = "destin", length = 100)
+	private String destin;
 
 	@JsonSerialize(using = ToStringSerializer.class)
-	@Column(name = "FECPRO")
-	private LocalDateTime FECPRO;
+	@Column(name = "fec_pro")
+	private LocalDateTime fecPro;
 
 	@JsonIgnore
-	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "CNS_NOMARCH")
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "archivo")
 	private List<General> generales = new ArrayList<General>();
 
 	@JsonIgnore
-	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "NOM_ARCHIVO")
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "archivo")
 	private List<Error> errores = new ArrayList<Error>();
 
-	public String getNOM_ARCHIVO() {
-		return NOM_ARCHIVO;
+	public String getNomArchivo() {
+		return nomArchivo;
 	}
 
-	public void setNOM_ARCHIVO(String nOM_ARCHIVO) {
-		NOM_ARCHIVO = nOM_ARCHIVO;
+	public void setNomArchivo(String nomArchivo) {
+		this.nomArchivo = nomArchivo;
 	}
 
-	public String getORIGEN() {
-		return ORIGEN;
+	public String getOrigen() {
+		return origen;
 	}
 
-	public void setORIGEN(String oRIGEN) {
-		ORIGEN = oRIGEN;
+	public void setOrigen(String origen) {
+		this.origen = origen;
 	}
 
-	public String getDESTIN() {
-		return DESTIN;
+	public String getDestin() {
+		return destin;
 	}
 
-	public void setDESTIN(String dESTIN) {
-		DESTIN = dESTIN;
+	public void setDestin(String destin) {
+		this.destin = destin;
 	}
 
-	public LocalDateTime getFECPRO() {
-		return FECPRO;
+	public LocalDateTime getFecPro() {
+		return fecPro;
 	}
 
-	public void setFECPRO(LocalDateTime fECPRO) {
-		FECPRO = fECPRO;
+	public void setFecPro(LocalDateTime fecPro) {
+		this.fecPro = fecPro;
 	}
 
 	public List<General> getGenerales() {

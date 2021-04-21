@@ -21,41 +21,41 @@ public class TipoError implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Id
-	@Column(name = "COD_ERROR", nullable = false, unique = true, length = 3)
-	private String COD_ERROR;
+	@Column(name = "cod_error", nullable = false, unique = true, length = 3)
+	private String codError;
 
-	@Column(name = "DESCRIPCION", length = 50)
-	private String DESCRIPCION;
+	@Column(name = "descripcion", length = 50)
+	private String descripcion;
 
-	@Column(name = "RELEVANCIA", length = 1)
-	private String RELEVANCIA;
+	@Column(name = "relevancia", length = 1)
+	private String relevancia;
 
 	@JsonIgnore
-	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "TIPO_ERROR")
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "tipoError")
 	private List<Error> errores = new ArrayList<Error>();
 
-	public String getCOD_ERROR() {
-		return COD_ERROR;
+	public String getCodError() {
+		return codError;
 	}
 
-	public void setCOD_ERROR(String cOD_ERROR) {
-		COD_ERROR = cOD_ERROR;
+	public void setCodError(String codError) {
+		this.codError = codError;
 	}
 
-	public String getDESCRIPCION() {
-		return DESCRIPCION;
+	public String getDescripcion() {
+		return descripcion;
 	}
 
-	public void setDESCRIPCION(String dESCRIPCION) {
-		DESCRIPCION = dESCRIPCION;
+	public void setDescripcion(String descripcion) {
+		this.descripcion = descripcion;
 	}
 
-	public String getRELEVANCIA() {
-		return RELEVANCIA;
+	public String getRelevancia() {
+		return relevancia;
 	}
 
-	public void setRELEVANCIA(String rELEVANCIA) {
-		RELEVANCIA = rELEVANCIA;
+	public void setRelevancia(String relevancia) {
+		this.relevancia = relevancia;
 	}
 
 	public List<Error> getErrores() {

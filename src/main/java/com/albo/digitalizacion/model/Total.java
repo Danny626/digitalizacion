@@ -24,21 +24,21 @@ public class Total implements Serializable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "CNS_CODCON", nullable = false, length = 15)
-	private String CNS_CODCON;
+	@Column(name = "cns_cod_con", nullable = false, length = 15)
+	private String cnsCodCon;
 
-	@Column(name = "CNS_TIPDOC", length = 3)
-	private String CNS_TIPDOC;
+	@Column(name = "cns_tip_doc", length = 3)
+	private String cnsTipDoc;
 
 	@JsonSerialize(using = ToStringSerializer.class)
-	@Column(name = "CNS_FECENV")
-	private LocalDateTime CNS_FECENV;
+	@Column(name = "cns_fec_env")
+	private LocalDateTime cnsFecEnv;
 
-	@Column(name = "CNS_ESTADO", length = 1)
-	private String CNS_ESTADO;
+	@Column(name = "cns_estado", length = 1)
+	private String cnsEstado;
 
-	@Column(name = "CNS_CANTIDAD")
-	private Integer CNS_CANTIDAD;
+	@Column(name = "cns_cantidad")
+	private Integer cnsCantidad;
 
 	public Long getId() {
 		return id;
@@ -48,44 +48,44 @@ public class Total implements Serializable {
 		this.id = id;
 	}
 
-	public String getCNS_CODCON() {
-		return CNS_CODCON;
+	public String getCnsCodCon() {
+		return cnsCodCon;
 	}
 
-	public void setCNS_CODCON(String cNS_CODCON) {
-		CNS_CODCON = cNS_CODCON;
+	public void setCnsCodCon(String cnsCodCon) {
+		this.cnsCodCon = cnsCodCon;
 	}
 
-	public String getCNS_TIPDOC() {
-		return CNS_TIPDOC;
+	public String getCnsTipDoc() {
+		return cnsTipDoc;
 	}
 
-	public void setCNS_TIPDOC(String cNS_TIPDOC) {
-		CNS_TIPDOC = cNS_TIPDOC;
+	public void setCnsTipDoc(String cnsTipDoc) {
+		this.cnsTipDoc = cnsTipDoc;
 	}
 
-	public LocalDateTime getCNS_FECENV() {
-		return CNS_FECENV;
+	public LocalDateTime getCnsFecEnv() {
+		return cnsFecEnv;
 	}
 
-	public void setCNS_FECENV(LocalDateTime cNS_FECENV) {
-		CNS_FECENV = cNS_FECENV;
+	public void setCnsFecEnv(LocalDateTime cnsFecEnv) {
+		this.cnsFecEnv = cnsFecEnv;
 	}
 
-	public String getCNS_ESTADO() {
-		return CNS_ESTADO;
+	public String getCnsEstado() {
+		return cnsEstado;
 	}
 
-	public void setCNS_ESTADO(String cNS_ESTADO) {
-		CNS_ESTADO = cNS_ESTADO;
+	public void setCnsEstado(String cnsEstado) {
+		this.cnsEstado = cnsEstado;
 	}
 
-	public Integer getCNS_CANTIDAD() {
-		return CNS_CANTIDAD;
+	public Integer getCnsCantidad() {
+		return cnsCantidad;
 	}
 
-	public void setCNS_CANTIDAD(Integer cNS_CANTIDAD) {
-		CNS_CANTIDAD = cNS_CANTIDAD;
+	public void setCnsCantidad(Integer cnsCantidad) {
+		this.cnsCantidad = cnsCantidad;
 	}
 
 }

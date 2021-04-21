@@ -26,35 +26,35 @@ public class General implements Serializable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "CNS_CODCONC", nullable = false, length = 15)
-	private String CNS_CODCONC;
+	@Column(name = "cns_cod_conc", nullable = false, length = 15)
+	private String cnsCodConc;
 
-	@Column(name = "CNS_TIPODOC", length = 3)
-	private String CNS_TIPODOC;
+	@Column(name = "cns_tipo_doc", length = 3)
+	private String cnsTipoDoc;
 
-	@Column(name = "CNS_EMISOR", length = 35)
-	private String CNS_EMISOR;
+	@Column(name = "cns_emisor", length = 35)
+	private String cnsEmisor;
 
 	@ManyToOne
-	@JoinColumn(name = "CNS_NOMARCH", nullable = false, referencedColumnName = "NOM_ARCHIVO")
-	private Archivo CNS_NOMARCH;
+	@JoinColumn(name = "cns_arch", nullable = false, referencedColumnName = "id")
+	private Archivo archivo;
 
-	@Column(name = "CNS_ADUTRA", length = 3)
-	private String CNS_ADUTRA;
+	@Column(name = "cns_adu_tra", length = 3)
+	private String cnsAduTra;
 
-	@Column(name = "CNS_NROTRA", length = 50)
-	private String CNS_NROTRA;
-
-	@JsonSerialize(using = ToStringSerializer.class)
-	@Column(name = "CNS_FECHA_EMI")
-	private LocalDateTime CNS_FECHA_EMI;
+	@Column(name = "cns_nro_tra", length = 50)
+	private String cnsNroTra;
 
 	@JsonSerialize(using = ToStringSerializer.class)
-	@Column(name = "CNS_FECHA_PRO")
-	private LocalDateTime CNS_FECHA_PRO;
+	@Column(name = "cns_fecha_emi")
+	private LocalDateTime cnsFechaEmi;
 
-	@Column(name = "CNS_ESTADO", length = 1)
-	private String CNS_ESTADO;
+	@JsonSerialize(using = ToStringSerializer.class)
+	@Column(name = "cns_fecha_pro")
+	private LocalDateTime cnsFechaPro;
+
+	@Column(name = "cns_estado", length = 1)
+	private String cnsEstado;
 
 	public Long getId() {
 		return id;
@@ -64,76 +64,76 @@ public class General implements Serializable {
 		this.id = id;
 	}
 
-	public String getCNS_CODCONC() {
-		return CNS_CODCONC;
+	public String getCnsCodConc() {
+		return cnsCodConc;
 	}
 
-	public void setCNS_CODCONC(String cNS_CODCONC) {
-		CNS_CODCONC = cNS_CODCONC;
+	public void setCnsCodConc(String cnsCodConc) {
+		this.cnsCodConc = cnsCodConc;
 	}
 
-	public String getCNS_TIPODOC() {
-		return CNS_TIPODOC;
+	public String getCnsTipoDoc() {
+		return cnsTipoDoc;
 	}
 
-	public void setCNS_TIPODOC(String cNS_TIPODOC) {
-		CNS_TIPODOC = cNS_TIPODOC;
+	public void setCnsTipoDoc(String cnsTipoDoc) {
+		this.cnsTipoDoc = cnsTipoDoc;
 	}
 
-	public String getCNS_EMISOR() {
-		return CNS_EMISOR;
+	public String getCnsEmisor() {
+		return cnsEmisor;
 	}
 
-	public void setCNS_EMISOR(String cNS_EMISOR) {
-		CNS_EMISOR = cNS_EMISOR;
+	public void setCnsEmisor(String cnsEmisor) {
+		this.cnsEmisor = cnsEmisor;
 	}
 
-	public Archivo getCNS_NOMARCH() {
-		return CNS_NOMARCH;
+	public Archivo getArchivo() {
+		return archivo;
 	}
 
-	public void setCNS_NOMARCH(Archivo cNS_NOMARCH) {
-		CNS_NOMARCH = cNS_NOMARCH;
+	public void setArchivo(Archivo archivo) {
+		this.archivo = archivo;
 	}
 
-	public String getCNS_ADUTRA() {
-		return CNS_ADUTRA;
+	public String getCnsAduTra() {
+		return cnsAduTra;
 	}
 
-	public void setCNS_ADUTRA(String cNS_ADUTRA) {
-		CNS_ADUTRA = cNS_ADUTRA;
+	public void setCnsAduTra(String cnsAduTra) {
+		this.cnsAduTra = cnsAduTra;
 	}
 
-	public String getCNS_NROTRA() {
-		return CNS_NROTRA;
+	public String getCnsNroTra() {
+		return cnsNroTra;
 	}
 
-	public void setCNS_NROTRA(String cNS_NROTRA) {
-		CNS_NROTRA = cNS_NROTRA;
+	public void setCnsNroTra(String cnsNroTra) {
+		this.cnsNroTra = cnsNroTra;
 	}
 
-	public String getCNS_ESTADO() {
-		return CNS_ESTADO;
+	public LocalDateTime getCnsFechaEmi() {
+		return cnsFechaEmi;
 	}
 
-	public void setCNS_ESTADO(String cNS_ESTADO) {
-		CNS_ESTADO = cNS_ESTADO;
+	public void setCnsFechaEmi(LocalDateTime cnsFechaEmi) {
+		this.cnsFechaEmi = cnsFechaEmi;
 	}
 
-	public LocalDateTime getCNS_FECHA_EMI() {
-		return CNS_FECHA_EMI;
+	public LocalDateTime getCnsFechaPro() {
+		return cnsFechaPro;
 	}
 
-	public void setCNS_FECHA_EMI(LocalDateTime cNS_FECHA_EMI) {
-		CNS_FECHA_EMI = cNS_FECHA_EMI;
+	public void setCnsFechaPro(LocalDateTime cnsFechaPro) {
+		this.cnsFechaPro = cnsFechaPro;
 	}
 
-	public LocalDateTime getCNS_FECHA_PRO() {
-		return CNS_FECHA_PRO;
+	public String getCnsEstado() {
+		return cnsEstado;
 	}
 
-	public void setCNS_FECHA_PRO(LocalDateTime cNS_FECHA_PRO) {
-		CNS_FECHA_PRO = cNS_FECHA_PRO;
+	public void setCnsEstado(String cnsEstado) {
+		this.cnsEstado = cnsEstado;
 	}
 
 }
