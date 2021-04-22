@@ -217,7 +217,7 @@ public class DigitalizacionController {
 		ArchivoResultado archivoResultado = new ArchivoResultado();
 		archivoResultado.setInventario(inventario);
 		archivoResultado.setNuevoNombreArchivo(nuevoNombreArchivo);
-		archivoResultado.setTipoDocArchivo(nuevoNombreArchivo);
+		archivoResultado.setTipoDocArchivo(numeroNombreArchivo[1]);
 
 		return archivoResultado;
 	}
@@ -258,6 +258,7 @@ public class DigitalizacionController {
 		general.setCnsNroTra(tramite);
 		general.setCnsFechaEmi(fechaEmision);
 		general.setCnsFechaPro(fechaProceso);
+		general.setCnsEstado("A");
 		this.generalService.saveOrUpdate(general);
 
 		return this.generalService.saveOrUpdate(general);
