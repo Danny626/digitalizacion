@@ -7,6 +7,9 @@ public class ArchivoResultado {
 	private String nuevoNombreArchivo;
 	private Inventario inventario;
 	private String tipoDocArchivo;
+	private String gestion;
+	private String codAduana;
+	private String nroArchivo;
 
 	public String getNuevoNombreArchivo() {
 		return nuevoNombreArchivo;
@@ -30,6 +33,30 @@ public class ArchivoResultado {
 
 	public void setTipoDocArchivo(String tipoDocArchivo) {
 		this.tipoDocArchivo = tipoDocArchivo;
+	}
+
+	public String getGestion() {
+		return gestion;
+	}
+
+	public void setGestion(String gestion) {
+		this.gestion = gestion;
+	}
+
+	public String getCodAduana() {
+		return codAduana;
+	}
+
+	public void setCodAduana(String codAduana) {
+		this.codAduana = codAduana;
+	}
+
+	public String getNroArchivo() {
+		return nroArchivo;
+	}
+
+	public void setNroArchivo(String nroArchivo) {
+		this.nroArchivo = nroArchivo;
 	}
 
 }
