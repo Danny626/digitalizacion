@@ -159,8 +159,7 @@ public class DigitalizacionController {
 				if (nombreArch.charAt(0) == 'I') {
 
 					ArchivoResultado archivoResultado = this.copiarRenombrarArchivoInventario(nombreArch,
-							directorioOrigen, pathDestino, recinto, fechaProceso, Integer.parseInt(mesesAtras),
-							fechaFinalProceso);
+							directorioOrigen, pathDestino, recinto, fechaInicioProceso, fechaFinalProceso);
 
 					Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
 							fechaFinalProceso, directorioOrigen, pathDestino);
@@ -311,24 +310,18 @@ public class DigitalizacionController {
 	 * (invParte modificado)
 	 **/
 	public ArchivoResultado copiarRenombrarArchivoInventario(String nombreArchivoOrigen, String pathOrigen,
-			String pathDestino, String invRecinto, String fechaProceso, Integer mesesAtras,
-			LocalDateTime fechaProcesoFin) {
+			String pathDestino, String invRecinto, LocalDateTime fechaInicioProceso, LocalDateTime fechaFinProceso) {
 
 		// obtenemos el nroInv del nombreArchivoOrigen
 		String[] nombreArchivoPartido = nombreArchivoOrigen.split("\\.");
 		String[] numeroNombreArchivo = nombreArchivoPartido[0].split("-");
 		String nroInventario = numeroNombreArchivo[0].replace("I", "");
 
-		// TODO cargar la fecha inicial desde la llamada a esta funcion
-		// armamos la fecha de proceso inicial, ajustandola n meses atrás
-		LocalDateTime fechaProcesoInicio = this.fechaStringToDate(fechaProceso + " 00:00:00");
-		fechaProcesoInicio = fechaProcesoInicio.minusMonths(mesesAtras + 3);
-
 		// buscamos el parte correspondiente al nro de inventario en un intervalo de
 		// tiempo de inventarios registrados en bd (invFecha)
 		Inventario inventario = new Inventario();
-		inventario = inventarioService.buscarPorNroInventario(nroInventario, invRecinto, fechaProcesoInicio,
-				fechaProcesoFin);
+		inventario = inventarioService.buscarPorNroInventario(nroInventario, invRecinto, fechaInicioProceso,
+				fechaFinProceso);
 
 		// armamos el nuevo nombre q tendrá el archivo copiado
 		String nuevoNombreArchivo = inventario.getInvGestion() + inventario.getInvAduana() + inventario.getInvNroreg()
