@@ -246,6 +246,20 @@ public class DigitalizacionController {
 							archivoResultado.getCodAduana(), tramite2, archivoResultado.getDocArchivo().getDarFecha());
 				}
 
+				// -- Parte de recepción
+				if (nombreArch.charAt(0) == 'P') {
+					ArchivoResultado archivoResultado = this.copiarRenombrarArchivoParteRecepcion(nombreArch,
+							directorioOrigen, pathDestino, recinto, fechaInicioProceso, fechaFinalProceso);
+
+					Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
+							fechaFinalProceso, directorioOrigen, pathDestino);
+
+					General general = this.registrarGeneral(archivoResultado.getTipoDocArchivo(),
+							archivoResultado.getNuevoNombreArchivo(), archivoResultado.getInventario().getInvAduana(),
+							archivoResultado.getInventario().getInvParte(),
+							archivoResultado.getInventario().getInvFechaAnpr(), fechaFinalProceso, archivo);
+				}
+
 			}
 
 			return new ResponseEntity<String>("Archivos procesados: " + listaArchivos.size(), HttpStatus.OK);
@@ -430,6 +444,49 @@ public class DigitalizacionController {
 		String nroArchivo = codSalida.substring(1);
 		archivoResultado.setNroArchivo(nroArchivo);
 		archivoResultado.setDocArchivo(docArchivo);
+
+		return archivoResultado;
+	}
+
+	/**
+	 * función q copia archivos de partes de recepcion(P000206-901.tif) con un nuevo
+	 * nombre (invParte modificado)
+	 **/
+	public ArchivoResultado copiarRenombrarArchivoParteRecepcion(String nombreArchivoOrigen, String pathOrigen,
+			String pathDestino, String invRecinto, LocalDateTime fechaProcesoInicio, LocalDateTime fechaProcesoFin) {
+
+		// obtenemos el nroInv del nombreArchivoOrigen
+		String[] nombreArchivoPartido = nombreArchivoOrigen.split("\\.");
+		String[] numeroNombreArchivo = nombreArchivoPartido[0].split("-");
+		String nroInventario = numeroNombreArchivo[0].replace("P", "");
+
+		// buscamos el parte correspondiente al nro de inventario en un intervalo de
+		// tiempo de inventarios registrados en bd (invFecha)
+		Inventario inventario = new Inventario();
+		inventario = inventarioService.buscarPorNroInventario(nroInventario, invRecinto, fechaProcesoInicio,
+				fechaProcesoFin);
+
+		// armamos el nuevo nombre q tendrá el archivo copiado
+		String nuevoNombreArchivo = inventario.getInvGestion() + inventario.getInvAduana() + inventario.getInvNroreg()
+				+ inventario.getInvEmbarque() + "-" + numeroNombreArchivo[1] + ".tif";
+
+		// copiamos el archivo con su nuevo nombre
+		try {
+			Path origenPath = Paths.get(pathOrigen + "//" + nombreArchivoOrigen);
+			Path destinoPath = Paths.get(pathDestino + "//" + nuevoNombreArchivo);
+
+			// NOTA. sobreescribe el fichero de destino si ya existe en el destino
+			Files.copy(origenPath, destinoPath, StandardCopyOption.REPLACE_EXISTING);
+		} catch (FileNotFoundException ex) {
+			LOGGER.log(Level.ERROR, ex.getMessage());
+		} catch (IOException ex) {
+			LOGGER.log(Level.ERROR, ex.getMessage());
+		}
+
+		ArchivoResultado archivoResultado = new ArchivoResultado();
+		archivoResultado.setInventario(inventario);
+		archivoResultado.setNuevoNombreArchivo(nuevoNombreArchivo);
+		archivoResultado.setTipoDocArchivo(numeroNombreArchivo[1]);
 
 		return archivoResultado;
 	}
