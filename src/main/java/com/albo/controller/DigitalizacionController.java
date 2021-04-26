@@ -38,8 +38,10 @@ import com.albo.digitalizacion.model.Relacion;
 import com.albo.digitalizacion.service.IArchivoService;
 import com.albo.digitalizacion.service.IGeneralService;
 import com.albo.digitalizacion.service.IRelacionService;
+import com.albo.soa.model.DocArchivo;
 import com.albo.soa.model.Inventario;
 import com.albo.soa.model.Recinto;
+import com.albo.soa.service.IDocArchivoService;
 import com.albo.soa.service.IInventarioService;
 import com.albo.soa.service.IRecintoService;
 
@@ -69,6 +71,9 @@ public class DigitalizacionController {
 
 	@Autowired
 	private IRecintoService recintoService;
+
+	@Autowired
+	private IDocArchivoService docArchivoService;
 
 	@Autowired
 	private IFacturaService facturaService;
@@ -210,6 +215,37 @@ public class DigitalizacionController {
 							factura.getDestCod(), tramite2, factura.getFactFecha());
 				}
 
+				// -- Constancia de entrega(Pase de salida)
+				if (nombreArch.charAt(0) == 'S') {
+					ArchivoResultado archivoResultado = this.copiarRenombrarArchivoConstanciaEntrega(nombreArch,
+							directorioOrigen, pathDestino, recinto, Integer.parseInt(gestion),
+							recintoRes.getRecCoda().toString());
+
+					Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
+							fechaFinalProceso, directorioOrigen, pathDestino);
+
+					// armamos el tramite de acuerdo a como va en la tabla general
+					String tramite1 = archivoResultado.getGestion() + " " + archivoResultado.getCodAduana() + " C "
+							+ archivoResultado.getNroArchivo();
+
+					General general = this.registrarGeneral(archivoResultado.getTipoDocArchivo(),
+							archivoResultado.getNuevoNombreArchivo(), archivoResultado.getCodAduana(), tramite1,
+							archivoResultado.getDocArchivo().getDarFecha(), fechaFinalProceso, archivo);
+
+					// verificamos si el documento de salida es una dui o dim para asignarle la
+					// codificación pertinente
+					String tipoDocTram1 = archivoResultado.getDocArchivo().getDocArchivoPK().getDarCod().substring(7);
+					if (tipoDocTram1.charAt(0) == 'D' || tipoDocTram1.charAt(0) == 'C') {
+						tipoDocTram1 = "960";
+					}
+
+					String tramite2 = tramite1;
+
+					Relacion relacion = this.registrarRelacion(tipoDocTram1, archivoResultado.getCodAduana(), tramite1,
+							archivoResultado.getDocArchivo().getDarFecha(), archivoResultado.getTipoDocArchivo(),
+							archivoResultado.getCodAduana(), tramite2, archivoResultado.getDocArchivo().getDarFecha());
+				}
+
 			}
 
 			return new ResponseEntity<String>("Archivos procesados: " + listaArchivos.size(), HttpStatus.OK);
@@ -312,7 +348,7 @@ public class DigitalizacionController {
 	public ArchivoResultado copiarRenombrarArchivoCertificadoSalida(String nombreArchivoOrigen, String pathOrigen,
 			String pathDestino, String recinto, String fechaProceso, LocalDateTime fechaProcesoFin, String codAduana) {
 
-		// obtenemos el nroInv del nombreArchivoOrigen
+		// obtenemos el nroCertificado del nombreArchivoOrigen
 		String[] nombreArchivoPartido = nombreArchivoOrigen.split("\\.");
 		String[] numeroNombreArchivo = nombreArchivoPartido[0].split("-");
 		String nroArchivo = numeroNombreArchivo[0].replace("C", "");
@@ -340,7 +376,60 @@ public class DigitalizacionController {
 		archivoResultado.setGestion(String.valueOf(fechaProcesoFin.getYear()));
 		archivoResultado.setCodAduana(codAduana);
 		archivoResultado.setNroArchivo(nroArchivo);
-//		archivoResultado.setTramite(fechaProcesoFin.getYear() + " " + codAduana + " " + "C" + " " + "0" + nroArchivo);
+
+		return archivoResultado;
+	}
+
+	/**
+	 * función q copia archivos de constancias de entrega(S000099-932.TIF) con un
+	 * nuevo nombre
+	 **/
+	public ArchivoResultado copiarRenombrarArchivoConstanciaEntrega(String nombreArchivoOrigen, String pathOrigen,
+			String pathDestino, String recinto, Integer gestion, String codAduana) {
+
+		// obtenemos el nroConstanciaentrega del nombreArchivoOrigen
+		String[] nombreArchivoPartido = nombreArchivoOrigen.split("\\.");
+		String[] numeroNombreArchivo = nombreArchivoPartido[0].split("-");
+		String nroConstanciaEntrega = numeroNombreArchivo[0].replace("S", "");
+
+		// buscamos la declaración única aduanera(dui, dim) correspondiente al nro de
+		// salida dado en el nombre del archivo
+		DocArchivo docArchivo = docArchivoService.buscarPorNroSalida("%" + nroConstanciaEntrega, recinto, gestion);
+
+		String codSalida = docArchivo.getDocArchivoPK().getDarCod().substring(7).replace("D2", "C2");
+
+		// si el tamaño del codSalida es menor a 8 caracteres, le agregamos un 0 extra
+		if (codSalida.length() < 8) {
+			codSalida = codSalida.replace("C", "C0");
+		}
+
+		// armamos el nuevo nombre q tendrá el archivo copiado
+		String nuevoNombreArchivo = gestion + codAduana + codSalida + "-" + numeroNombreArchivo[1] + ".tif";
+
+		// copiamos el archivo con su nuevo nombre
+		try {
+			Path origenPath = Paths.get(pathOrigen + "//" + nombreArchivoOrigen);
+			Path destinoPath = Paths.get(pathDestino + "//" + nuevoNombreArchivo);
+
+			// NOTA. sobreescribe el fichero de destino si ya existe en el destino
+			Files.copy(origenPath, destinoPath, StandardCopyOption.REPLACE_EXISTING);
+		} catch (FileNotFoundException ex) {
+			LOGGER.log(Level.ERROR, ex.getMessage());
+		} catch (IOException ex) {
+			LOGGER.log(Level.ERROR, ex.getMessage());
+		}
+
+		ArchivoResultado archivoResultado = new ArchivoResultado();
+		archivoResultado.setNuevoNombreArchivo(nuevoNombreArchivo);
+		archivoResultado.setTipoDocArchivo(numeroNombreArchivo[1]);
+		archivoResultado.setCodAduana(codAduana);
+		// TODO verificar si adjuntamos aqui la gestion actual o la gestión de
+		// dar_gestion
+		archivoResultado.setGestion(gestion.toString());
+
+		String nroArchivo = codSalida.substring(1);
+		archivoResultado.setNroArchivo(nroArchivo);
+		archivoResultado.setDocArchivo(docArchivo);
 
 		return archivoResultado;
 	}

@@ -6,4 +6,6 @@ import com.albo.soa.model.DocArchivoPK;
 
 public interface IDocArchivoService extends IService<DocArchivo, DocArchivoPK> {
 
+	DocArchivo buscarPorNroSalida(String nroSalida, String codRecinto, Integer gestion);
+
 }

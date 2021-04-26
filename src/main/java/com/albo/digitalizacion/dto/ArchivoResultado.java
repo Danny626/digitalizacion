@@ -1,5 +1,6 @@
 package com.albo.digitalizacion.dto;
 
+import com.albo.soa.model.DocArchivo;
 import com.albo.soa.model.Inventario;
 
 public class ArchivoResultado {
@@ -10,6 +11,7 @@ public class ArchivoResultado {
 	private String gestion;
 	private String codAduana;
 	private String nroArchivo;
+	private DocArchivo docArchivo;
 
 	public String getNuevoNombreArchivo() {
 		return nuevoNombreArchivo;
@@ -57,6 +59,14 @@ public class ArchivoResultado {
 
 	public void setNroArchivo(String nroArchivo) {
 		this.nroArchivo = nroArchivo;
+	}
+
+	public DocArchivo getDocArchivo() {
+		return docArchivo;
+	}
+
+	public void setDocArchivo(DocArchivo docArchivo) {
+		this.docArchivo = docArchivo;
 	}
 
 }
