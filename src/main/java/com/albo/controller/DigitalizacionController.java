@@ -97,17 +97,21 @@ public class DigitalizacionController {
 	}
 
 	/**
-	 * Proceso de digitalización
+	 * Proceso de digitalización (archivos)
 	 * 
 	 * @param gestion           gestión del proceso de digitalización
 	 * @param trimestre         trimestre del proceso de digitalización
 	 * @param recinto           recinto q realiza la digitalización
+	 * @param fechaProceso      fecha del último día del trimestre del proceso de
+	 *                          digitalización
+	 * @param mesesAtras        cantidad de meses atrás en los que se revisará los
+	 *                          inventarios
 	 * @param directorioOrigen  directorio donde se encuentran los archivos
 	 *                          digitalizados
 	 * @param directorioDestino directorio donde se copiaran los nuevos archivos
 	 */
-	@PostMapping(value = "/procesar", produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<?> procesar(@RequestParam("gestion") String gestion,
+	@PostMapping(value = "/procesarArchivos", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<?> procesarArchivos(@RequestParam("gestion") String gestion,
 			@RequestParam("trimestre") String trimestre, @RequestParam("recinto") String recinto,
 			@RequestParam("fechaProceso") String fechaProceso, @RequestParam("mesesAtras") String mesesAtras,
 			@RequestParam("directorioOrigen") String directorioOrigen,
