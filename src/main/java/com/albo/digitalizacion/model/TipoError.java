@@ -15,7 +15,7 @@ import javax.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
-@Table(name = "tipoError", schema = "PUBLIC")
+@Table(name = "tipo_error", schema = "PUBLIC")
 public class TipoError implements Serializable {
 
 	private static final long serialVersionUID = 1L;

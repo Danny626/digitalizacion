@@ -35,9 +35,11 @@ import com.albo.digitalizacion.dto.ArchivoResultado;
 import com.albo.digitalizacion.model.Archivo;
 import com.albo.digitalizacion.model.General;
 import com.albo.digitalizacion.model.Relacion;
+import com.albo.digitalizacion.model.TipoDocumento;
 import com.albo.digitalizacion.service.IArchivoService;
 import com.albo.digitalizacion.service.IGeneralService;
 import com.albo.digitalizacion.service.IRelacionService;
+import com.albo.digitalizacion.service.ITipoDocumentoService;
 import com.albo.soa.model.DocArchivo;
 import com.albo.soa.model.Inventario;
 import com.albo.soa.model.Recinto;
@@ -77,6 +79,9 @@ public class DigitalizacionController {
 
 	@Autowired
 	private IFacturaService facturaService;
+
+	@Autowired
+	private ITipoDocumentoService tipoDocumentoService;
 
 	@GetMapping(value = "/prueba", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> inventarioPorParte() {
@@ -164,8 +169,12 @@ public class DigitalizacionController {
 					Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
 							fechaFinalProceso, directorioOrigen, pathDestino);
 
-					General general = this.registrarGeneral(archivoResultado.getTipoDocArchivo(),
-							archivoResultado.getNuevoNombreArchivo(), archivoResultado.getInventario().getInvAduana(),
+					// buscamos el tipo de documento de acuerdo al codigo
+					TipoDocumento tipoDocumento = tipoDocumentoService.findById(archivoResultado.getTipoDocArchivo())
+							.get();
+
+					General general = this.registrarGeneral(tipoDocumento, archivoResultado.getNuevoNombreArchivo(),
+							archivoResultado.getInventario().getInvAduana(),
 							archivoResultado.getInventario().getInvParte(),
 							archivoResultado.getInventario().getInvFechaAnpr(), fechaFinalProceso, archivo);
 				}
@@ -193,25 +202,30 @@ public class DigitalizacionController {
 						System.exit(1);
 					}
 
+					// buscamos el tipo de documento1 de acuerdo al codigo
+					TipoDocumento tipoDocumento1 = tipoDocumentoService.findById(archivoResultado.getTipoDocArchivo())
+							.get();
+
 					// armamos el tramite de acuerdo a como va en la tabla general
 					String tramite1 = archivoResultado.getGestion() + " " + archivoResultado.getCodAduana() + " C 0"
 							+ archivoResultado.getNroArchivo();
 
-					General general = this.registrarGeneral(archivoResultado.getTipoDocArchivo(),
-							archivoResultado.getNuevoNombreArchivo(), archivoResultado.getCodAduana(), tramite1,
-							factura.getFactFecha(), fechaFinalProceso, archivo);
+					General general = this.registrarGeneral(tipoDocumento1, archivoResultado.getNuevoNombreArchivo(),
+							archivoResultado.getCodAduana(), tramite1, factura.getFactFecha(), fechaFinalProceso,
+							archivo);
 
-					String codDocTram2 = "";
+					// buscamos el tipo de documento1 de acuerdo al codigo de factura
+					TipoDocumento tipoDocumento2 = new TipoDocumento();
 					if (factura.getFacturaPK().getDocCod().equals("FA")) {
-						codDocTram2 = "380";
+						tipoDocumento2 = tipoDocumentoService.findById("380").get();
 					}
 
 					String tramite2 = factura.getFacturaPK().getE3Cod() + " " + factura.getFacturaPK().getE3ofSerie()
 							+ " " + factura.getFacturaPK().getFactNro();
 
-					Relacion relacion = this.registrarRelacion(archivoResultado.getTipoDocArchivo(),
-							archivoResultado.getCodAduana(), tramite1, factura.getFactFecha(), codDocTram2,
-							factura.getDestCod(), tramite2, factura.getFactFecha());
+					Relacion relacion = this.registrarRelacion(tipoDocumento1, archivoResultado.getCodAduana(),
+							tramite1, factura.getFactFecha(), tipoDocumento2, factura.getDestCod(), tramite2,
+							factura.getFactFecha());
 				}
 
 				// -- Constancia de entrega(Pase de salida)
@@ -223,25 +237,31 @@ public class DigitalizacionController {
 					Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
 							fechaFinalProceso, directorioOrigen, pathDestino);
 
+					// buscamos el tipo de documento1 de acuerdo al codigo
+					TipoDocumento tipoDocumento2 = tipoDocumentoService.findById(archivoResultado.getTipoDocArchivo())
+							.get();
+
 					// armamos el tramite de acuerdo a como va en la tabla general
 					String tramite1 = archivoResultado.getGestion() + " " + archivoResultado.getCodAduana() + " C "
 							+ archivoResultado.getNroArchivo();
 
-					General general = this.registrarGeneral(archivoResultado.getTipoDocArchivo(),
-							archivoResultado.getNuevoNombreArchivo(), archivoResultado.getCodAduana(), tramite1,
-							archivoResultado.getDocArchivo().getDarFecha(), fechaFinalProceso, archivo);
+					General general = this.registrarGeneral(tipoDocumento2, archivoResultado.getNuevoNombreArchivo(),
+							archivoResultado.getCodAduana(), tramite1, archivoResultado.getDocArchivo().getDarFecha(),
+							fechaFinalProceso, archivo);
 
+					TipoDocumento tipoDocumento1 = new TipoDocumento();
 					// verificamos si el documento de salida es una dui o dim para asignarle la
 					// codificación pertinente
 					String tipoDocTram1 = archivoResultado.getDocArchivo().getDocArchivoPK().getDarCod().substring(7);
 					if (tipoDocTram1.charAt(0) == 'D' || tipoDocTram1.charAt(0) == 'C') {
-						tipoDocTram1 = "960";
+						// buscamos el tipo de documento1 de acuerdo al codigo de DUA
+						tipoDocumento1 = tipoDocumentoService.findById("960").get();
 					}
 
 					String tramite2 = tramite1;
 
-					Relacion relacion = this.registrarRelacion(tipoDocTram1, archivoResultado.getCodAduana(), tramite1,
-							archivoResultado.getDocArchivo().getDarFecha(), archivoResultado.getTipoDocArchivo(),
+					Relacion relacion = this.registrarRelacion(tipoDocumento1, archivoResultado.getCodAduana(),
+							tramite1, archivoResultado.getDocArchivo().getDarFecha(), tipoDocumento2,
 							archivoResultado.getCodAduana(), tramite2, archivoResultado.getDocArchivo().getDarFecha());
 				}
 
@@ -253,8 +273,12 @@ public class DigitalizacionController {
 					Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
 							fechaFinalProceso, directorioOrigen, pathDestino);
 
-					General general = this.registrarGeneral(archivoResultado.getTipoDocArchivo(),
-							archivoResultado.getNuevoNombreArchivo(), archivoResultado.getInventario().getInvAduana(),
+					// buscamos el tipo de documento de acuerdo al codigo
+					TipoDocumento tipoDocumento = tipoDocumentoService.findById(archivoResultado.getTipoDocArchivo())
+							.get();
+
+					General general = this.registrarGeneral(tipoDocumento, archivoResultado.getNuevoNombreArchivo(),
+							archivoResultado.getInventario().getInvAduana(),
 							archivoResultado.getInventario().getInvParte(),
 							archivoResultado.getInventario().getInvFechaAnpr(), fechaFinalProceso, archivo);
 				}
@@ -508,12 +532,12 @@ public class DigitalizacionController {
 	 * 
 	 * @return
 	 */
-	public General registrarGeneral(String tipoDoc, String nuevoNombreArchivo, String codAduana, String tramite,
+	public General registrarGeneral(TipoDocumento tipoDoc, String nuevoNombreArchivo, String codAduana, String tramite,
 			LocalDateTime fechaEmision, LocalDateTime fechaProceso, Archivo archivo) {
 
 		General general = new General();
 		general.setCnsCodConc(nitConcesionario);
-		general.setCnsTipoDoc(tipoDoc);
+		general.setTipoDocumento(tipoDoc);
 		general.setCnsEmisor(nitConcesionario);
 		general.setArchivo(archivo);
 		general.setCnsAduTra(codAduana);
@@ -531,16 +555,16 @@ public class DigitalizacionController {
 	 * 
 	 * @return
 	 */
-	public Relacion registrarRelacion(String tipoDoc1, String codAdu1, String tra1, LocalDateTime fechaEmi1,
-			String tipoDoc2, String codAdu2, String tra2, LocalDateTime fechaEmi2) {
+	public Relacion registrarRelacion(TipoDocumento tipoDoc1, String codAdu1, String tra1, LocalDateTime fechaEmi1,
+			TipoDocumento tipoDoc2, String codAdu2, String tra2, LocalDateTime fechaEmi2) {
 
 		Relacion relacion = new Relacion();
-		relacion.setCnsTipoDoc1(tipoDoc1);
+		relacion.setTipoDocumento1(tipoDoc1);
 		relacion.setCnsAduTra1(codAdu1);
 		relacion.setCnsNroTra1(tra1);
 		relacion.setCnsEmisor1(nitConcesionario);
 		relacion.setCnsFechaEmi1(fechaEmi1);
-		relacion.setCnsTipoDoc2(tipoDoc2);
+		relacion.setTipoDocumento2(tipoDoc2);
 		relacion.setCnsAduTra2(codAdu2);
 		relacion.setCnsNroTra2(tra2);
 		relacion.setCnsEmisor2(nitConcesionario);

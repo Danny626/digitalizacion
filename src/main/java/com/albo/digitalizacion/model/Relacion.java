@@ -8,6 +8,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -24,9 +26,6 @@ public class Relacion implements Serializable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "cns_tipo_doc1", nullable = false, length = 3)
-	private String cnsTipoDoc1;
-
 	@Column(name = "cns_adu_tra1", length = 3)
 	private String cnsAduTra1;
 
@@ -39,9 +38,6 @@ public class Relacion implements Serializable {
 	@JsonSerialize(using = ToStringSerializer.class)
 	@Column(name = "cns_fecha_emi1")
 	private LocalDateTime cnsFechaEmi1;
-
-	@Column(name = "cns_tipo_doc2", length = 3)
-	private String cnsTipoDoc2;
 
 	@Column(name = "cns_adu_tra2", length = 3)
 	private String cnsAduTra2;
@@ -59,20 +55,20 @@ public class Relacion implements Serializable {
 	@Column(name = "cns_estado", length = 1)
 	private String cnsEstado;
 
+	@ManyToOne
+	@JoinColumn(name = "tipo_documento1", nullable = false, referencedColumnName = "codigo")
+	private TipoDocumento tipoDocumento1;
+
+	@ManyToOne
+	@JoinColumn(name = "tipo_documento2", nullable = false, referencedColumnName = "codigo")
+	private TipoDocumento tipoDocumento2;
+
 	public Long getId() {
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
-	}
-
-	public String getCnsTipoDoc1() {
-		return cnsTipoDoc1;
-	}
-
-	public void setCnsTipoDoc1(String cnsTipoDoc1) {
-		this.cnsTipoDoc1 = cnsTipoDoc1;
 	}
 
 	public String getCnsAduTra1() {
@@ -105,14 +101,6 @@ public class Relacion implements Serializable {
 
 	public void setCnsFechaEmi1(LocalDateTime cnsFechaEmi1) {
 		this.cnsFechaEmi1 = cnsFechaEmi1;
-	}
-
-	public String getCnsTipoDoc2() {
-		return cnsTipoDoc2;
-	}
-
-	public void setCnsTipoDoc2(String cnsTipoDoc2) {
-		this.cnsTipoDoc2 = cnsTipoDoc2;
 	}
 
 	public String getCnsAduTra2() {
@@ -153,6 +141,22 @@ public class Relacion implements Serializable {
 
 	public void setCnsEstado(String cnsEstado) {
 		this.cnsEstado = cnsEstado;
+	}
+
+	public TipoDocumento getTipoDocumento1() {
+		return tipoDocumento1;
+	}
+
+	public void setTipoDocumento1(TipoDocumento tipoDocumento1) {
+		this.tipoDocumento1 = tipoDocumento1;
+	}
+
+	public TipoDocumento getTipoDocumento2() {
+		return tipoDocumento2;
+	}
+
+	public void setTipoDocumento2(TipoDocumento tipoDocumento2) {
+		this.tipoDocumento2 = tipoDocumento2;
 	}
 
 }

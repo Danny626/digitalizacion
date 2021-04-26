@@ -29,11 +29,12 @@ public class General implements Serializable {
 	@Column(name = "cns_cod_conc", nullable = false, length = 15)
 	private String cnsCodConc;
 
-	@Column(name = "cns_tipo_doc", length = 3)
-	private String cnsTipoDoc;
-
 	@Column(name = "cns_emisor", length = 35)
 	private String cnsEmisor;
+
+	@ManyToOne
+	@JoinColumn(name = "tipo_documento", nullable = false, referencedColumnName = "codigo")
+	private TipoDocumento tipoDocumento;
 
 	@ManyToOne
 	@JoinColumn(name = "cns_arch", nullable = false, referencedColumnName = "id")
@@ -70,14 +71,6 @@ public class General implements Serializable {
 
 	public void setCnsCodConc(String cnsCodConc) {
 		this.cnsCodConc = cnsCodConc;
-	}
-
-	public String getCnsTipoDoc() {
-		return cnsTipoDoc;
-	}
-
-	public void setCnsTipoDoc(String cnsTipoDoc) {
-		this.cnsTipoDoc = cnsTipoDoc;
 	}
 
 	public String getCnsEmisor() {
@@ -136,4 +129,11 @@ public class General implements Serializable {
 		this.cnsEstado = cnsEstado;
 	}
 
+	public TipoDocumento getTipoDocumento() {
+		return tipoDocumento;
+	}
+
+	public void setTipoDocumento(TipoDocumento tipoDocumento) {
+		this.tipoDocumento = tipoDocumento;
+	}
 }
