@@ -3,7 +3,7 @@ package com.albo.digitalizacion.dto;
 import com.albo.soa.model.DocArchivo;
 import com.albo.soa.model.Inventario;
 
-public class ArchivoResultado {
+public class ArchivoResultadoDTO {
 
 	private String nuevoNombreArchivo;
 	private Inventario inventario;

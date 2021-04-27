@@ -29,13 +29,13 @@ spring:
       hibernate-hbm2ddl-auto: update
     soa:
       driver-class-name: oracle.jdbc.OracleDriver
-      jdbc-url: jdbc:oracle:thin:@192.168.202.5:1521:XE
+      jdbc-url: jdbc:oracle:thin:@${DB_HOST_SOA_TAM}:1521:XE
       username: SOA
       password: ${PASSWORD_SOA}
       hibernate-hbm2ddl-auto: none
     compusoft:
       driver-class-name: oracle.jdbc.OracleDriver
-      jdbc-url: jdbc:oracle:thin:@192.168.202.5:1521:XE
+      jdbc-url: jdbc:oracle:thin:@${DB_HOST_COMPUSOFT}:1521:XE
       username: COMPUSOFT
       password: ${DB_PASSWORD_COMPUSOFT}
       hibernate-hbm2ddl-auto: none

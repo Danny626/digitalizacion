@@ -8,6 +8,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -27,8 +29,9 @@ public class Total implements Serializable {
 	@Column(name = "cns_cod_con", nullable = false, length = 15)
 	private String cnsCodCon;
 
-	@Column(name = "cns_tip_doc", length = 3)
-	private String cnsTipDoc;
+	@ManyToOne
+	@JoinColumn(name = "tipo_documento", nullable = false, referencedColumnName = "codigo")
+	private TipoDocumento tipoDocumento;
 
 	@JsonSerialize(using = ToStringSerializer.class)
 	@Column(name = "cns_fec_env")
@@ -38,7 +41,7 @@ public class Total implements Serializable {
 	private String cnsEstado;
 
 	@Column(name = "cns_cantidad")
-	private Integer cnsCantidad;
+	private Long cnsCantidad;
 
 	public Long getId() {
 		return id;
@@ -54,14 +57,6 @@ public class Total implements Serializable {
 
 	public void setCnsCodCon(String cnsCodCon) {
 		this.cnsCodCon = cnsCodCon;
-	}
-
-	public String getCnsTipDoc() {
-		return cnsTipDoc;
-	}
-
-	public void setCnsTipDoc(String cnsTipDoc) {
-		this.cnsTipDoc = cnsTipDoc;
 	}
 
 	public LocalDateTime getCnsFecEnv() {
@@ -80,12 +75,20 @@ public class Total implements Serializable {
 		this.cnsEstado = cnsEstado;
 	}
 
-	public Integer getCnsCantidad() {
+	public Long getCnsCantidad() {
 		return cnsCantidad;
 	}
 
-	public void setCnsCantidad(Integer cnsCantidad) {
+	public void setCnsCantidad(Long cnsCantidad) {
 		this.cnsCantidad = cnsCantidad;
+	}
+
+	public TipoDocumento getTipoDocumento() {
+		return tipoDocumento;
+	}
+
+	public void setTipoDocumento(TipoDocumento tipoDocumento) {
+		this.tipoDocumento = tipoDocumento;
 	}
 
 }

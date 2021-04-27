@@ -31,15 +31,18 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.albo.compusoft.model.Factura;
 import com.albo.compusoft.service.IFacturaService;
-import com.albo.digitalizacion.dto.ArchivoResultado;
+import com.albo.digitalizacion.dto.ArchivoResultadoDTO;
+import com.albo.digitalizacion.dto.TipoDocContGeneralDTO;
 import com.albo.digitalizacion.model.Archivo;
 import com.albo.digitalizacion.model.General;
 import com.albo.digitalizacion.model.Relacion;
 import com.albo.digitalizacion.model.TipoDocumento;
+import com.albo.digitalizacion.model.Total;
 import com.albo.digitalizacion.service.IArchivoService;
 import com.albo.digitalizacion.service.IGeneralService;
 import com.albo.digitalizacion.service.IRelacionService;
 import com.albo.digitalizacion.service.ITipoDocumentoService;
+import com.albo.digitalizacion.service.ITotalService;
 import com.albo.soa.model.DocArchivo;
 import com.albo.soa.model.Inventario;
 import com.albo.soa.model.Recinto;
@@ -82,6 +85,9 @@ public class DigitalizacionController {
 
 	@Autowired
 	private ITipoDocumentoService tipoDocumentoService;
+
+	@Autowired
+	private ITotalService totalService;
 
 	@GetMapping(value = "/prueba", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> inventarioPorParte() {
@@ -167,7 +173,7 @@ public class DigitalizacionController {
 				// -- Inventario
 				if (nombreArch.charAt(0) == 'I') {
 
-					ArchivoResultado archivoResultado = this.copiarRenombrarArchivoInventario(nombreArch,
+					ArchivoResultadoDTO archivoResultado = this.copiarRenombrarArchivoInventario(nombreArch,
 							directorioOrigen, pathDestino, recinto, fechaInicioProceso, fechaFinalProceso);
 
 					Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
@@ -185,7 +191,7 @@ public class DigitalizacionController {
 
 				// -- Certificados de salida
 				if (nombreArch.charAt(0) == 'C') {
-					ArchivoResultado archivoResultado = this.copiarRenombrarArchivoCertificadoSalida(nombreArch,
+					ArchivoResultadoDTO archivoResultado = this.copiarRenombrarArchivoCertificadoSalida(nombreArch,
 							directorioOrigen, pathDestino, recinto, fechaProceso, fechaFinalProceso,
 							recintoRes.getRecCoda().toString());
 
@@ -234,7 +240,7 @@ public class DigitalizacionController {
 
 				// -- Constancia de entrega(Pase de salida)
 				if (nombreArch.charAt(0) == 'S') {
-					ArchivoResultado archivoResultado = this.copiarRenombrarArchivoConstanciaEntrega(nombreArch,
+					ArchivoResultadoDTO archivoResultado = this.copiarRenombrarArchivoConstanciaEntrega(nombreArch,
 							directorioOrigen, pathDestino, recinto, Integer.parseInt(gestion),
 							recintoRes.getRecCoda().toString());
 
@@ -271,7 +277,7 @@ public class DigitalizacionController {
 
 				// -- Parte de recepción
 				if (nombreArch.charAt(0) == 'P') {
-					ArchivoResultado archivoResultado = this.copiarRenombrarArchivoParteRecepcion(nombreArch,
+					ArchivoResultadoDTO archivoResultado = this.copiarRenombrarArchivoParteRecepcion(nombreArch,
 							directorioOrigen, pathDestino, recinto, fechaInicioProceso, fechaFinalProceso);
 
 					Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
@@ -295,6 +301,43 @@ public class DigitalizacionController {
 			return new ResponseEntity<>(e, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
+	}
+
+	/**
+	 * Proceso de generación de los totales en bd
+	 * 
+	 * @param fechaProceso fecha del último día del trimestre del proceso de
+	 *                     digitalización
+	 */
+	@PostMapping(value = "/procesarTotales", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<?> procesarTotales(@RequestParam("fechaProceso") String fechaProceso) {
+
+		// armamos la fecha de proceso final del trimestre
+		LocalDateTime fechaFinalProceso = this.fechaStringToDate(fechaProceso + " 23:59:59");
+		LOGGER.info("fechaFinalProceso: " + fechaFinalProceso);
+
+		// buscamos la cantidad de los diferentes tipos de documento registrados en
+		// General
+		List<TipoDocContGeneralDTO> generalDistintos = new ArrayList<>();
+		generalDistintos = totalService.buscarDistintos(fechaFinalProceso);
+
+		// registramos en Total cada tipo de documento distinto obtenido de General
+		List<Total> totalResultado = new ArrayList<>();
+
+		generalDistintos.forEach(elem -> {
+
+			Total total = new Total();
+			total.setCnsCodCon(nitConcesionario);
+			total.setCnsFecEnv(fechaFinalProceso);
+			total.setCnsEstado("A");
+			total.setTipoDocumento(elem.getTipoDocumento());
+			total.setCnsCantidad(elem.getCantidad());
+
+			totalResultado.add(totalService.saveOrUpdate(total));
+
+		});
+
+		return new ResponseEntity<List<Total>>(totalResultado, HttpStatus.OK);
 	}
 
 	/** Buscar Factura **/
@@ -337,7 +380,7 @@ public class DigitalizacionController {
 	 * función q copia archivos de inventarios(I000117-901.TIF) con un nuevo nombre
 	 * (invParte modificado)
 	 **/
-	public ArchivoResultado copiarRenombrarArchivoInventario(String nombreArchivoOrigen, String pathOrigen,
+	public ArchivoResultadoDTO copiarRenombrarArchivoInventario(String nombreArchivoOrigen, String pathOrigen,
 			String pathDestino, String invRecinto, LocalDateTime fechaInicioProceso, LocalDateTime fechaFinProceso) {
 
 		// obtenemos el nroInv del nombreArchivoOrigen
@@ -368,7 +411,7 @@ public class DigitalizacionController {
 			LOGGER.log(Level.ERROR, ex.getMessage());
 		}
 
-		ArchivoResultado archivoResultado = new ArchivoResultado();
+		ArchivoResultadoDTO archivoResultado = new ArchivoResultadoDTO();
 		archivoResultado.setInventario(inventario);
 		archivoResultado.setNuevoNombreArchivo(nuevoNombreArchivo);
 		archivoResultado.setTipoDocArchivo(numeroNombreArchivo[1]);
@@ -380,7 +423,7 @@ public class DigitalizacionController {
 	 * función q copia archivos de certificados de salida(C000022-B74.TIF) con un
 	 * nuevo nombre
 	 **/
-	public ArchivoResultado copiarRenombrarArchivoCertificadoSalida(String nombreArchivoOrigen, String pathOrigen,
+	public ArchivoResultadoDTO copiarRenombrarArchivoCertificadoSalida(String nombreArchivoOrigen, String pathOrigen,
 			String pathDestino, String recinto, String fechaProceso, LocalDateTime fechaProcesoFin, String codAduana) {
 
 		// obtenemos el nroCertificado del nombreArchivoOrigen
@@ -405,7 +448,7 @@ public class DigitalizacionController {
 			LOGGER.log(Level.ERROR, ex.getMessage());
 		}
 
-		ArchivoResultado archivoResultado = new ArchivoResultado();
+		ArchivoResultadoDTO archivoResultado = new ArchivoResultadoDTO();
 		archivoResultado.setNuevoNombreArchivo(nuevoNombreArchivo);
 		archivoResultado.setTipoDocArchivo(numeroNombreArchivo[1]);
 		archivoResultado.setGestion(String.valueOf(fechaProcesoFin.getYear()));
@@ -419,7 +462,7 @@ public class DigitalizacionController {
 	 * función q copia archivos de constancias de entrega(S000099-932.TIF) con un
 	 * nuevo nombre
 	 **/
-	public ArchivoResultado copiarRenombrarArchivoConstanciaEntrega(String nombreArchivoOrigen, String pathOrigen,
+	public ArchivoResultadoDTO copiarRenombrarArchivoConstanciaEntrega(String nombreArchivoOrigen, String pathOrigen,
 			String pathDestino, String recinto, Integer gestion, String codAduana) {
 
 		// obtenemos el nroConstanciaentrega del nombreArchivoOrigen
@@ -454,7 +497,7 @@ public class DigitalizacionController {
 			LOGGER.log(Level.ERROR, ex.getMessage());
 		}
 
-		ArchivoResultado archivoResultado = new ArchivoResultado();
+		ArchivoResultadoDTO archivoResultado = new ArchivoResultadoDTO();
 		archivoResultado.setNuevoNombreArchivo(nuevoNombreArchivo);
 		archivoResultado.setTipoDocArchivo(numeroNombreArchivo[1]);
 		archivoResultado.setCodAduana(codAduana);
@@ -473,7 +516,7 @@ public class DigitalizacionController {
 	 * función q copia archivos de partes de recepcion(P000206-901.tif) con un nuevo
 	 * nombre (invParte modificado)
 	 **/
-	public ArchivoResultado copiarRenombrarArchivoParteRecepcion(String nombreArchivoOrigen, String pathOrigen,
+	public ArchivoResultadoDTO copiarRenombrarArchivoParteRecepcion(String nombreArchivoOrigen, String pathOrigen,
 			String pathDestino, String invRecinto, LocalDateTime fechaProcesoInicio, LocalDateTime fechaProcesoFin) {
 
 		// obtenemos el nroInv del nombreArchivoOrigen
@@ -504,7 +547,7 @@ public class DigitalizacionController {
 			LOGGER.log(Level.ERROR, ex.getMessage());
 		}
 
-		ArchivoResultado archivoResultado = new ArchivoResultado();
+		ArchivoResultadoDTO archivoResultado = new ArchivoResultadoDTO();
 		archivoResultado.setInventario(inventario);
 		archivoResultado.setNuevoNombreArchivo(nuevoNombreArchivo);
 		archivoResultado.setTipoDocArchivo(numeroNombreArchivo[1]);
