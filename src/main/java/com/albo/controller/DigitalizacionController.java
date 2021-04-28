@@ -115,13 +115,15 @@ public class DigitalizacionController {
 	 * @param directorioOrigen  directorio donde se encuentran los archivos
 	 *                          digitalizados
 	 * @param directorioDestino directorio donde se copiaran los nuevos archivos
+	 * @param serialTramite 	con qué letra se procesará las duis, dims
 	 */
 	@PostMapping(value = "/procesarArchivos", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> procesarArchivos(@RequestParam("gestion") String gestion,
 			@RequestParam("trimestre") String trimestre, @RequestParam("recinto") String recinto,
 			@RequestParam("fechaProceso") String fechaProceso, @RequestParam("mesesAtras") String mesesAtras,
 			@RequestParam("directorioOrigen") String directorioOrigen,
-			@RequestParam("directorioDestino") String directorioDestino) {
+			@RequestParam("directorioDestino") String directorioDestino,
+			@RequestParam("serialTramite") String serialTramite) {
 
 		/* controlamos que los parametros de entrada no esten vacios */
 		if (gestion == "" || trimestre == "" || recinto == "" || directorioOrigen == "" || directorioDestino == ""
@@ -242,7 +244,7 @@ public class DigitalizacionController {
 				if (nombreArch.charAt(0) == 'S') {
 					ArchivoResultadoDTO archivoResultado = this.copiarRenombrarArchivoConstanciaEntrega(nombreArch,
 							directorioOrigen, pathDestino, recinto, Integer.parseInt(gestion),
-							recintoRes.getRecCoda().toString());
+							recintoRes.getRecCoda().toString(), serialTramite);
 
 					Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
 							fechaFinalProceso, directorioOrigen, pathDestino);
@@ -386,7 +388,7 @@ public class DigitalizacionController {
 		// obtenemos el nroInv del nombreArchivoOrigen
 		String[] nombreArchivoPartido = nombreArchivoOrigen.split("\\.");
 		String[] numeroNombreArchivo = nombreArchivoPartido[0].split("-");
-		String nroInventario = numeroNombreArchivo[0].replace("I", "");
+		String nroInventario = numeroNombreArchivo[0].replaceFirst("I", "");
 
 		// buscamos el parte correspondiente al nro de inventario en un intervalo de
 		// tiempo de inventarios registrados en bd (invFecha)
@@ -429,7 +431,7 @@ public class DigitalizacionController {
 		// obtenemos el nroCertificado del nombreArchivoOrigen
 		String[] nombreArchivoPartido = nombreArchivoOrigen.split("\\.");
 		String[] numeroNombreArchivo = nombreArchivoPartido[0].split("-");
-		String nroArchivo = numeroNombreArchivo[0].replace("C", "");
+		String nroArchivo = numeroNombreArchivo[0].replaceFirst("C", "");
 
 		// armamos el nuevo nombre q tendrá el archivo copiado
 		String nuevoNombreArchivo = fechaProcesoFin.getYear() + codAduana + "C" + "0" + nroArchivo + "-"
@@ -463,22 +465,30 @@ public class DigitalizacionController {
 	 * nuevo nombre
 	 **/
 	public ArchivoResultadoDTO copiarRenombrarArchivoConstanciaEntrega(String nombreArchivoOrigen, String pathOrigen,
-			String pathDestino, String recinto, Integer gestion, String codAduana) {
+			String pathDestino, String recinto, Integer gestion, String codAduana, String serialTramite) {
 
 		// obtenemos el nroConstanciaentrega del nombreArchivoOrigen
 		String[] nombreArchivoPartido = nombreArchivoOrigen.split("\\.");
 		String[] numeroNombreArchivo = nombreArchivoPartido[0].split("-");
-		String nroConstanciaEntrega = numeroNombreArchivo[0].replace("S", "");
+		String nroConstanciaEntrega = numeroNombreArchivo[0].replaceFirst("S", "");
 
 		// buscamos la declaración única aduanera(dui, dim) correspondiente al nro de
 		// salida dado en el nombre del archivo
 		DocArchivo docArchivo = docArchivoService.buscarPorNroSalida("%" + nroConstanciaEntrega, recinto, gestion);
 
-		String codSalida = docArchivo.getDocArchivoPK().getDarCod().substring(7).replace("D2", "C2");
+		String codSalida = docArchivo.getDocArchivoPK().getDarCod().substring(7);
+		if (serialTramite.equals("C") && codSalida.charAt(0) == 'D') {
+			codSalida = codSalida.substring(1);
+			codSalida = "C" + codSalida;
+		}
 
 		// si el tamaño del codSalida es menor a 8 caracteres, le agregamos un 0 extra
-		if (codSalida.length() < 8) {
-			codSalida = codSalida.replace("C", "C0");
+		if (codSalida.length() < 8 && codSalida.charAt(0) == 'C') {
+			codSalida = codSalida.replaceFirst("C", "C0");
+		}
+
+		if (codSalida.length() < 8 && codSalida.charAt(0) == 'D') {
+			codSalida = codSalida.replaceFirst("D", "D0");
 		}
 
 		// armamos el nuevo nombre q tendrá el archivo copiado
@@ -522,7 +532,7 @@ public class DigitalizacionController {
 		// obtenemos el nroInv del nombreArchivoOrigen
 		String[] nombreArchivoPartido = nombreArchivoOrigen.split("\\.");
 		String[] numeroNombreArchivo = nombreArchivoPartido[0].split("-");
-		String nroInventario = numeroNombreArchivo[0].replace("P", "");
+		String nroInventario = numeroNombreArchivo[0].replaceFirst("P", "");
 
 		// buscamos el parte correspondiente al nro de inventario en un intervalo de
 		// tiempo de inventarios registrados en bd (invFecha)
