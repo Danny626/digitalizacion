@@ -115,7 +115,7 @@ public class DigitalizacionController {
 	 * @param directorioOrigen  directorio donde se encuentran los archivos
 	 *                          digitalizados
 	 * @param directorioDestino directorio donde se copiaran los nuevos archivos
-	 * @param serialTramite 	con qué letra se procesará las duis, dims
+	 * @param serialTramite     con qué letra se procesará las duis, dims
 	 */
 	@PostMapping(value = "/procesarArchivos", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> procesarArchivos(@RequestParam("gestion") String gestion,
@@ -123,7 +123,7 @@ public class DigitalizacionController {
 			@RequestParam("fechaProceso") String fechaProceso, @RequestParam("mesesAtras") String mesesAtras,
 			@RequestParam("directorioOrigen") String directorioOrigen,
 			@RequestParam("directorioDestino") String directorioDestino,
-			@RequestParam("serialTramite") String serialTramite) {
+			@RequestParam("serialTramiteDim") String serialTramiteDim) {
 
 		/* controlamos que los parametros de entrada no esten vacios */
 		if (gestion == "" || trimestre == "" || recinto == "" || directorioOrigen == "" || directorioDestino == ""
@@ -244,37 +244,44 @@ public class DigitalizacionController {
 				if (nombreArch.charAt(0) == 'S') {
 					ArchivoResultadoDTO archivoResultado = this.copiarRenombrarArchivoConstanciaEntrega(nombreArch,
 							directorioOrigen, pathDestino, recinto, Integer.parseInt(gestion),
-							recintoRes.getRecCoda().toString(), serialTramite);
+							recintoRes.getRecCoda().toString(), serialTramiteDim);
 
-					Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
-							fechaFinalProceso, directorioOrigen, pathDestino);
+					// verificamos si existe respuesta del renombramiento del archivo (no hubo
+					// error) para poder continuar
+					if (archivoResultado.getNuevoNombreArchivo() != null) {
 
-					// buscamos el tipo de documento1 de acuerdo al codigo
-					TipoDocumento tipoDocumento2 = tipoDocumentoService.findById(archivoResultado.getTipoDocArchivo())
-							.get();
+						Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
+								fechaFinalProceso, directorioOrigen, pathDestino);
 
-					// armamos el tramite de acuerdo a como va en la tabla general
-					String tramite1 = archivoResultado.getGestion() + " " + archivoResultado.getCodAduana() + " C "
-							+ archivoResultado.getNroArchivo();
+						// buscamos el tipo de documento1 de acuerdo al codigo
+						TipoDocumento tipoDocumento2 = tipoDocumentoService
+								.findById(archivoResultado.getTipoDocArchivo()).get();
 
-					General general = this.registrarGeneral(tipoDocumento2, archivoResultado.getNuevoNombreArchivo(),
-							archivoResultado.getCodAduana(), tramite1, archivoResultado.getDocArchivo().getDarFecha(),
-							fechaFinalProceso, archivo);
+						// armamos el tramite de acuerdo a como va en la tabla general
+						String tramite1 = archivoResultado.getGestion() + " " + archivoResultado.getCodAduana() + " C "
+								+ archivoResultado.getNroArchivo();
 
-					TipoDocumento tipoDocumento1 = new TipoDocumento();
-					// verificamos si el documento de salida es una dui o dim para asignarle la
-					// codificación pertinente
-					String tipoDocTram1 = archivoResultado.getDocArchivo().getDocArchivoPK().getDarCod().substring(7);
-					if (tipoDocTram1.charAt(0) == 'D' || tipoDocTram1.charAt(0) == 'C') {
-						// buscamos el tipo de documento1 de acuerdo al codigo de DUA
-						tipoDocumento1 = tipoDocumentoService.findById("960").get();
+						General general = this.registrarGeneral(tipoDocumento2,
+								archivoResultado.getNuevoNombreArchivo(), archivoResultado.getCodAduana(), tramite1,
+								archivoResultado.getDocArchivo().getDarFecha(), fechaFinalProceso, archivo);
+
+						TipoDocumento tipoDocumento1 = new TipoDocumento();
+						// verificamos si el documento de salida es una dui o dim para asignarle la
+						// codificación pertinente
+						String tipoDocTram1 = archivoResultado.getDocArchivo().getDocArchivoPK().getDarCod()
+								.substring(7);
+						if (tipoDocTram1.charAt(0) == 'D' || tipoDocTram1.charAt(0) == 'C') {
+							// buscamos el tipo de documento1 de acuerdo al codigo de DUA
+							tipoDocumento1 = tipoDocumentoService.findById("960").get();
+						}
+
+						String tramite2 = tramite1;
+
+						Relacion relacion = this.registrarRelacion(tipoDocumento1, archivoResultado.getCodAduana(),
+								tramite1, archivoResultado.getDocArchivo().getDarFecha(), tipoDocumento2,
+								archivoResultado.getCodAduana(), tramite2,
+								archivoResultado.getDocArchivo().getDarFecha());
 					}
-
-					String tramite2 = tramite1;
-
-					Relacion relacion = this.registrarRelacion(tipoDocumento1, archivoResultado.getCodAduana(),
-							tramite1, archivoResultado.getDocArchivo().getDarFecha(), tipoDocumento2,
-							archivoResultado.getCodAduana(), tramite2, archivoResultado.getDocArchivo().getDarFecha());
 				}
 
 				// -- Parte de recepción
@@ -465,7 +472,9 @@ public class DigitalizacionController {
 	 * nuevo nombre
 	 **/
 	public ArchivoResultadoDTO copiarRenombrarArchivoConstanciaEntrega(String nombreArchivoOrigen, String pathOrigen,
-			String pathDestino, String recinto, Integer gestion, String codAduana, String serialTramite) {
+			String pathDestino, String recinto, Integer gestion, String codAduana, String serialTramiteDim) {
+
+		ArchivoResultadoDTO archivoResultado = new ArchivoResultadoDTO();
 
 		// obtenemos el nroConstanciaentrega del nombreArchivoOrigen
 		String[] nombreArchivoPartido = nombreArchivoOrigen.split("\\.");
@@ -477,7 +486,12 @@ public class DigitalizacionController {
 		DocArchivo docArchivo = docArchivoService.buscarPorNroSalida("%" + nroConstanciaEntrega, recinto, gestion);
 
 		String codSalida = docArchivo.getDocArchivoPK().getDarCod().substring(7);
-		if (serialTramite.equals("C") && codSalida.charAt(0) == 'D') {
+
+		// verificamos si el registro doc_archivo pertenece a una DUA para continuar
+		if (codSalida.charAt(0) != 'C' || codSalida.charAt(0) != 'D') {
+			return archivoResultado;
+		}
+		if (serialTramiteDim.equals("C") && codSalida.charAt(0) == 'D') {
 			codSalida = codSalida.substring(1);
 			codSalida = "C" + codSalida;
 		}
@@ -507,7 +521,6 @@ public class DigitalizacionController {
 			LOGGER.log(Level.ERROR, ex.getMessage());
 		}
 
-		ArchivoResultadoDTO archivoResultado = new ArchivoResultadoDTO();
 		archivoResultado.setNuevoNombreArchivo(nuevoNombreArchivo);
 		archivoResultado.setTipoDocArchivo(numeroNombreArchivo[1]);
 		archivoResultado.setCodAduana(codAduana);
