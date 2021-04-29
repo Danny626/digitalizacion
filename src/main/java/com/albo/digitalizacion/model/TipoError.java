@@ -32,7 +32,7 @@ public class TipoError implements Serializable {
 
 	@JsonIgnore
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "tipoError")
-	private List<Error> errores = new ArrayList<Error>();
+	private List<ErrorProceso> errores = new ArrayList<ErrorProceso>();
 
 	public String getCodError() {
 		return codError;
@@ -58,11 +58,11 @@ public class TipoError implements Serializable {
 		this.relevancia = relevancia;
 	}
 
-	public List<Error> getErrores() {
+	public List<ErrorProceso> getErrores() {
 		return errores;
 	}
 
-	public void setErrores(List<Error> errores) {
+	public void setErrores(List<ErrorProceso> errores) {
 		this.errores = errores;
 	}
 

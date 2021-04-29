@@ -42,6 +42,10 @@ public class TipoDocumento implements Serializable {
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "tipoDocumento2")
 	private List<Relacion> relaciones2 = new ArrayList<Relacion>();
 
+	@JsonIgnore
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "tipoDocumento")
+	private List<ErrorProceso> errores = new ArrayList<ErrorProceso>();
+
 	public String getCodigo() {
 		return codigo;
 	}
@@ -89,4 +93,13 @@ public class TipoDocumento implements Serializable {
 	public void setRelaciones2(List<Relacion> relaciones2) {
 		this.relaciones2 = relaciones2;
 	}
+
+	public List<ErrorProceso> getErrores() {
+		return errores;
+	}
+
+	public void setErrores(List<ErrorProceso> errores) {
+		this.errores = errores;
+	}
+
 }

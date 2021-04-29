@@ -17,7 +17,7 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
 @Entity
 @Table(name = "error", schema = "public")
-public class Error implements Serializable {
+public class ErrorProceso implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
@@ -29,11 +29,9 @@ public class Error implements Serializable {
 	@Column(name = "e3_cod", nullable = false, length = 5)
 	private String e3Cod;
 
-	@Column(name = "tipo_op", length = 2)
-	private String tipoOp;
-
-	@Column(name = "tipo_arch", length = 3)
-	private String tipoArch;
+	@ManyToOne
+	@JoinColumn(name = "tipo_documento", nullable = false, referencedColumnName = "codigo")
+	private TipoDocumento tipoDocumento;
 
 	@ManyToOne
 	@JoinColumn(name = "tipo_error", nullable = false, referencedColumnName = "cod_error")
@@ -63,22 +61,6 @@ public class Error implements Serializable {
 		this.e3Cod = e3Cod;
 	}
 
-	public String getTipoOp() {
-		return tipoOp;
-	}
-
-	public void setTipoOp(String tipoOp) {
-		this.tipoOp = tipoOp;
-	}
-
-	public String getTipoArch() {
-		return tipoArch;
-	}
-
-	public void setTipoArch(String tipoArch) {
-		this.tipoArch = tipoArch;
-	}
-
 	public TipoError getTipoError() {
 		return tipoError;
 	}
@@ -101,6 +83,14 @@ public class Error implements Serializable {
 
 	public void setArchivo(Archivo archivo) {
 		this.archivo = archivo;
+	}
+
+	public TipoDocumento getTipoDocumento() {
+		return tipoDocumento;
+	}
+
+	public void setTipoDocumento(TipoDocumento tipoDocumento) {
+		this.tipoDocumento = tipoDocumento;
 	}
 
 }

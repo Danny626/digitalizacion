@@ -34,14 +34,19 @@ import com.albo.compusoft.service.IFacturaService;
 import com.albo.digitalizacion.dto.ArchivoResultadoDTO;
 import com.albo.digitalizacion.dto.TipoDocContGeneralDTO;
 import com.albo.digitalizacion.model.Archivo;
+import com.albo.digitalizacion.model.ErrorProceso;
 import com.albo.digitalizacion.model.General;
 import com.albo.digitalizacion.model.Relacion;
 import com.albo.digitalizacion.model.TipoDocumento;
+import com.albo.digitalizacion.model.TipoError;
 import com.albo.digitalizacion.model.Total;
 import com.albo.digitalizacion.service.IArchivoService;
+import com.albo.digitalizacion.service.IErrorProcesoService;
 import com.albo.digitalizacion.service.IGeneralService;
+import com.albo.digitalizacion.service.IPrefijoService;
 import com.albo.digitalizacion.service.IRelacionService;
 import com.albo.digitalizacion.service.ITipoDocumentoService;
+import com.albo.digitalizacion.service.ITipoErrorService;
 import com.albo.digitalizacion.service.ITotalService;
 import com.albo.soa.model.DocArchivo;
 import com.albo.soa.model.Inventario;
@@ -88,6 +93,15 @@ public class DigitalizacionController {
 
 	@Autowired
 	private ITotalService totalService;
+
+	@Autowired
+	private IErrorProcesoService errorProcesoService;
+
+	@Autowired
+	private ITipoErrorService tipoErrorService;
+
+	@Autowired
+	private IPrefijoService prefijoService;
 
 	@GetMapping(value = "/prueba", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> inventarioPorParte() {
@@ -165,10 +179,22 @@ public class DigitalizacionController {
 			for (String nombreArch : listaArchivos) {
 				// verificamos la nomenclatura
 				// TODO mejorar o no la nomenclatura o solo mencionarlos
-				if (!this.revisaNomenclatura(nombreArch)) {
-					System.exit(1);
-					return new ResponseEntity<>("Error en la nomenclaturadel archivo: " + nombreArch,
-							HttpStatus.INTERNAL_SERVER_ERROR);
+				String codError = this.revisaNomenclatura(nombreArch);
+
+				if (!codError.equals("")) {
+					// registramos el archivo en conflicto
+					String tdoc = nombreArch.substring(8);
+					Archivo archivo = this.registrarArchivo(nombreArch, null, fechaFinalProceso, directorioOrigen, null,
+							true);
+
+					// buscamos el tipo de documento de acuerdo al codigo
+					TipoDocumento tipoDocumento = tipoDocumentoService.findById(tdoc).get();
+
+					// registramos el error
+					ErrorProceso errorProceso = this.registrarErrorProceso(recinto, tipoDocumento, codError, archivo,
+							fechaFinalProceso);
+
+					LOGGER.error("Error en nomenclatura: ", errorProceso);
 				}
 
 				// procesamos el archivo de acuerdo a su tipo
@@ -179,7 +205,7 @@ public class DigitalizacionController {
 							directorioOrigen, pathDestino, recinto, fechaInicioProceso, fechaFinalProceso);
 
 					Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
-							fechaFinalProceso, directorioOrigen, pathDestino);
+							fechaFinalProceso, directorioOrigen, pathDestino, false);
 
 					// buscamos el tipo de documento de acuerdo al codigo
 					TipoDocumento tipoDocumento = tipoDocumentoService.findById(archivoResultado.getTipoDocArchivo())
@@ -198,7 +224,7 @@ public class DigitalizacionController {
 							recintoRes.getRecCoda().toString());
 
 					Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
-							fechaFinalProceso, directorioOrigen, pathDestino);
+							fechaFinalProceso, directorioOrigen, pathDestino, false);
 
 					String nuevoCodArchivo = "%" + archivoResultado.getNroArchivo();
 
@@ -251,7 +277,7 @@ public class DigitalizacionController {
 					if (archivoResultado.getNuevoNombreArchivo() != null) {
 
 						Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
-								fechaFinalProceso, directorioOrigen, pathDestino);
+								fechaFinalProceso, directorioOrigen, pathDestino, false);
 
 						// buscamos el tipo de documento1 de acuerdo al codigo
 						TipoDocumento tipoDocumento2 = tipoDocumentoService
@@ -281,6 +307,20 @@ public class DigitalizacionController {
 								tramite1, archivoResultado.getDocArchivo().getDarFecha(), tipoDocumento2,
 								archivoResultado.getCodAduana(), tramite2,
 								archivoResultado.getDocArchivo().getDarFecha());
+					} else {
+						// en caso de existir error en copiarRenombrar, registramos en Archivo solo el
+						// origen
+						Archivo archivo = this.registrarArchivo(nombreArch, null, fechaFinalProceso, directorioOrigen,
+								null, true);
+
+						// buscamos el tipo de documento de acuerdo al codigo
+						TipoDocumento tipoDocumento = tipoDocumentoService
+								.findById(archivoResultado.getTipoDocArchivo()).get();
+
+						// registramos el error en ErrorProceso
+						ErrorProceso errorProceso = this.registrarErrorProceso(recinto, tipoDocumento, "E08", archivo,
+								fechaFinalProceso);
+
 					}
 				}
 
@@ -290,7 +330,7 @@ public class DigitalizacionController {
 							directorioOrigen, pathDestino, recinto, fechaInicioProceso, fechaFinalProceso);
 
 					Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
-							fechaFinalProceso, directorioOrigen, pathDestino);
+							fechaFinalProceso, directorioOrigen, pathDestino, false);
 
 					// buscamos el tipo de documento de acuerdo al codigo
 					TipoDocumento tipoDocumento = tipoDocumentoService.findById(archivoResultado.getTipoDocArchivo())
@@ -377,12 +417,60 @@ public class DigitalizacionController {
 	}
 
 	/** función q revisa la nomenclatura del archivo **/
-	public boolean revisaNomenclatura(String nombreArchivo) {
-		// verificamos la longitud de la cadena
+	public String revisaNomenclatura(String nombreArchivo) {
+
+		// verificamos la longitud de la cadena (codError. E01)
 		if (nombreArchivo.length() != 15) {
-			return false;
+			return "E01";
 		}
-		return true;
+
+		// verificamos si el prefijo es válido (codError. E02)
+		String prefijo = "" + nombreArchivo.charAt(0);
+		if (prefijoService.findById(prefijo).isEmpty()) {
+			return "E02";
+		}
+
+		// verificamos si el sufijo es válido (codError. E03)
+		String sufijo = nombreArchivo.substring(8);
+		if (tipoDocumentoService.findById(sufijo).isEmpty()) {
+			return "E03";
+		}
+
+		// verificamos si el nro. de registro es válido(sólo números) (codError. E04)
+		for (int i = 1; i < 7; i++) {
+			if (!Character.isDigit(nombreArchivo.charAt(i))) {
+				return "E04";
+			}
+		}
+
+		// TODO tendría q tomarse los prefijos de la bd y no de esta forma
+		// verificamos si existen incongruencias entre prefijo y sufijo (codError. E21)
+		switch (prefijo) {
+		case "I":
+			if (sufijo != "901") {
+				return "E21";
+			}
+			break;
+		case "C":
+			if (sufijo != "B74") {
+				return "B74";
+			}
+			break;
+		case "S":
+			if (sufijo != "932") {
+				return "E21";
+			}
+			break;
+		case "P":
+			if (sufijo != "901") {
+				return "E21";
+			}
+			break;
+		default:
+			LOGGER.error("Error verificando codError. E21");
+		}
+
+		return "";
 	}
 
 	/**
@@ -489,8 +577,15 @@ public class DigitalizacionController {
 
 		// verificamos si el registro doc_archivo pertenece a una DUA para continuar
 		if (codSalida.charAt(0) != 'C' || codSalida.charAt(0) != 'D') {
+
+			archivoResultado.setTipoDocArchivo(numeroNombreArchivo[1]);
+			archivoResultado.setCodAduana(codAduana);
+			archivoResultado.setDocArchivo(docArchivo);
+
 			return archivoResultado;
 		}
+
+		// si el serialTramiteDim viene con C, cambiamos las Dim's de D a C
 		if (serialTramiteDim.equals("C") && codSalida.charAt(0) == 'D') {
 			codSalida = codSalida.substring(1);
 			codSalida = "C" + codSalida;
@@ -585,13 +680,19 @@ public class DigitalizacionController {
 	 * @return
 	 */
 	public Archivo registrarArchivo(String nombreArchivoOrigen, String nuevoNombreArchivo, LocalDateTime fechaProceso,
-			String pathOrigen, String pathDestino) {
+			String pathOrigen, String pathDestino, Boolean onError) {
 
 		Archivo archivo = new Archivo();
-		archivo.setNomArchivo(nuevoNombreArchivo);
-		archivo.setFecPro(fechaProceso);
-		archivo.setOrigen(pathOrigen + "//" + nombreArchivoOrigen);
-		archivo.setDestin(pathDestino + "//" + nuevoNombreArchivo);
+
+		if (!onError) {
+			archivo.setNomArchivo(nuevoNombreArchivo);
+			archivo.setFecPro(fechaProceso);
+			archivo.setOrigen(pathOrigen + "//" + nombreArchivoOrigen);
+			archivo.setDestin(pathDestino + "//" + nuevoNombreArchivo);
+		} else {
+			archivo.setFecPro(fechaProceso);
+			archivo.setOrigen(pathOrigen + "//" + nombreArchivoOrigen);
+		}
 
 		return this.archivoService.saveOrUpdate(archivo);
 	}
@@ -645,6 +746,29 @@ public class DigitalizacionController {
 	}
 
 	/**
+	 * función que registra en la tabla ErrorProceso de la bd Digitalización un
+	 * error ocurrido
+	 * 
+	 * @return
+	 */
+	public ErrorProceso registrarErrorProceso(String recinto, TipoDocumento tipoDocumento, String codError,
+			Archivo archivo, LocalDateTime fecPro) {
+
+		ErrorProceso errorProceso = new ErrorProceso();
+		errorProceso.setArchivo(archivo);
+		errorProceso.setE3Cod(recinto);
+		errorProceso.setFecPro(fecPro);
+
+		// buscamos el tipo de error
+		TipoError tipoError = tipoErrorService.findById(codError).get();
+		errorProceso.setTipoError(tipoError);
+
+		errorProceso.setTipoDocumento(tipoDocumento);
+
+		return errorProcesoService.saveOrUpdate(errorProceso);
+	}
+
+	/**
 	 * funcion q convierte un texto con la fecha a LocalDateTime
 	 */
 	public LocalDateTime fechaStringToDate(String cadenaFecha) {
@@ -652,38 +776,6 @@ public class DigitalizacionController {
 		LocalDateTime fechaconvertida = LocalDateTime.parse(cadenaFecha, formatoFecha);
 		return fechaconvertida;
 	}
-
-	/**
-	 * función q copia archivos de inventarios(I000117-901.TIF), certificados de
-	 * salida(C000030-B74.tif) y constancias de entrega(S002928-932.TIF)
-	 * renombrandolos
-	 **/
-//	public void copiarRenombrarArchivo(String pathOrigen, String pathDestino, String nombreArchivoOrigen) {
-//		// caso Inventarios
-//		if (nombreArchivoOrigen.charAt(0) == 'I') {
-//			try {
-//				Path origenPath = Paths.get(pathOrigen + "//" + nombreArchivoOrigen);
-//				Path destinoPath = Paths.get(pathDestino + "//" + nombreArchivoOrigen);
-//				// sobreescribir el fichero de destino si existe y lo copia
-//				Files.copy(origenPath, destinoPath, StandardCopyOption.REPLACE_EXISTING);
-//			} catch (FileNotFoundException ex) {
-//				LOGGER.log(Level.ERROR, ex.getMessage());
-//			} catch (IOException ex) {
-//				LOGGER.log(Level.ERROR, ex.getMessage());
-//			}
-//		}
-//
-//		// caso Certificados de salida
-//		if (nombreArchivoOrigen.charAt(0) == 'C') {
-//
-//		}
-//
-//		// caso Constancias de entrega
-//		if (nombreArchivoOrigen.charAt(0) == 'S') {
-//
-//		}
-//
-//	}
 
 	/** función q devuelve un listado de los archivos en un directorio **/
 	public List<String> listFilesUsingFilesList(String dir) throws IOException {

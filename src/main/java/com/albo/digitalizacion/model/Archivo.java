@@ -50,7 +50,7 @@ public class Archivo implements Serializable {
 
 	@JsonIgnore
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "archivo")
-	private List<Error> errores = new ArrayList<Error>();
+	private List<ErrorProceso> errores = new ArrayList<ErrorProceso>();
 
 	public String getNomArchivo() {
 		return nomArchivo;
@@ -92,11 +92,11 @@ public class Archivo implements Serializable {
 		this.generales = generales;
 	}
 
-	public List<Error> getErrores() {
+	public List<ErrorProceso> getErrores() {
 		return errores;
 	}
 
-	public void setErrores(List<Error> errores) {
+	public void setErrores(List<ErrorProceso> errores) {
 		this.errores = errores;
 	}
 
