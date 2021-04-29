@@ -204,17 +204,34 @@ public class DigitalizacionController {
 					ArchivoResultadoDTO archivoResultado = this.copiarRenombrarArchivoInventario(nombreArch,
 							directorioOrigen, pathDestino, recinto, fechaInicioProceso, fechaFinalProceso);
 
-					Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
-							fechaFinalProceso, directorioOrigen, pathDestino, false);
+					if (archivoResultado != null) {
 
-					// buscamos el tipo de documento de acuerdo al codigo
-					TipoDocumento tipoDocumento = tipoDocumentoService.findById(archivoResultado.getTipoDocArchivo())
-							.get();
+						Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
+								fechaFinalProceso, directorioOrigen, pathDestino, false);
 
-					General general = this.registrarGeneral(tipoDocumento, archivoResultado.getNuevoNombreArchivo(),
-							archivoResultado.getInventario().getInvAduana(),
-							archivoResultado.getInventario().getInvParte(),
-							archivoResultado.getInventario().getInvFechaAnpr(), fechaFinalProceso, archivo);
+						// buscamos el tipo de documento de acuerdo al codigo
+						TipoDocumento tipoDocumento = tipoDocumentoService
+								.findById(archivoResultado.getTipoDocArchivo()).get();
+
+						General general = this.registrarGeneral(tipoDocumento, archivoResultado.getNuevoNombreArchivo(),
+								archivoResultado.getInventario().getInvAduana(),
+								archivoResultado.getInventario().getInvParte(),
+								archivoResultado.getInventario().getInvFechaAnpr(), fechaFinalProceso, archivo);
+					} else {
+						// registramos el archivo en conflicto
+						Archivo archivo = this.registrarArchivo(nombreArch, null, fechaFinalProceso, directorioOrigen,
+								null, true);
+
+						// buscamos el tipo de documento de acuerdo al codigo
+						String tdoc = nombreArch.substring(8);
+						TipoDocumento tipoDocumento = tipoDocumentoService.findById(tdoc).get();
+
+						// registramos el error
+						ErrorProceso errorProceso = this.registrarErrorProceso(recinto, tipoDocumento, "E05", archivo,
+								fechaFinalProceso);
+
+						LOGGER.error("No se encuentra el inventario: ", errorProceso);
+					}
 				}
 
 				// -- Certificados de salida
@@ -329,17 +346,34 @@ public class DigitalizacionController {
 					ArchivoResultadoDTO archivoResultado = this.copiarRenombrarArchivoParteRecepcion(nombreArch,
 							directorioOrigen, pathDestino, recinto, fechaInicioProceso, fechaFinalProceso);
 
-					Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
-							fechaFinalProceso, directorioOrigen, pathDestino, false);
+					if (archivoResultado != null) {
 
-					// buscamos el tipo de documento de acuerdo al codigo
-					TipoDocumento tipoDocumento = tipoDocumentoService.findById(archivoResultado.getTipoDocArchivo())
-							.get();
+						Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
+								fechaFinalProceso, directorioOrigen, pathDestino, false);
 
-					General general = this.registrarGeneral(tipoDocumento, archivoResultado.getNuevoNombreArchivo(),
-							archivoResultado.getInventario().getInvAduana(),
-							archivoResultado.getInventario().getInvParte(),
-							archivoResultado.getInventario().getInvFechaAnpr(), fechaFinalProceso, archivo);
+						// buscamos el tipo de documento de acuerdo al codigo
+						TipoDocumento tipoDocumento = tipoDocumentoService
+								.findById(archivoResultado.getTipoDocArchivo()).get();
+
+						General general = this.registrarGeneral(tipoDocumento, archivoResultado.getNuevoNombreArchivo(),
+								archivoResultado.getInventario().getInvAduana(),
+								archivoResultado.getInventario().getInvParte(),
+								archivoResultado.getInventario().getInvFechaAnpr(), fechaFinalProceso, archivo);
+					} else {
+						// registramos el archivo en conflicto
+						Archivo archivo = this.registrarArchivo(nombreArch, null, fechaFinalProceso, directorioOrigen,
+								null, true);
+
+						// buscamos el tipo de documento de acuerdo al codigo
+						String tdoc = nombreArch.substring(8);
+						TipoDocumento tipoDocumento = tipoDocumentoService.findById(tdoc).get();
+
+						// registramos el error
+						ErrorProceso errorProceso = this.registrarErrorProceso(recinto, tipoDocumento, "E05", archivo,
+								fechaFinalProceso);
+
+						LOGGER.error("No se encuentra el inventario: ", errorProceso);
+					}
 				}
 
 			}
@@ -478,7 +512,7 @@ public class DigitalizacionController {
 	 * (invParte modificado)
 	 **/
 	public ArchivoResultadoDTO copiarRenombrarArchivoInventario(String nombreArchivoOrigen, String pathOrigen,
-			String pathDestino, String invRecinto, LocalDateTime fechaInicioProceso, LocalDateTime fechaFinProceso) {
+			String pathDestino, String invRecinto, LocalDateTime fechaInicioProceso, LocalDateTime fechaFinalProceso) {
 
 		// obtenemos el nroInv del nombreArchivoOrigen
 		String[] nombreArchivoPartido = nombreArchivoOrigen.split("\\.");
@@ -489,31 +523,37 @@ public class DigitalizacionController {
 		// tiempo de inventarios registrados en bd (invFecha)
 		Inventario inventario = new Inventario();
 		inventario = inventarioService.buscarPorNroInventario(nroInventario, invRecinto, fechaInicioProceso,
-				fechaFinProceso);
+				fechaFinalProceso);
 
-		// armamos el nuevo nombre q tendrá el archivo copiado
-		String nuevoNombreArchivo = inventario.getInvGestion() + inventario.getInvAduana() + inventario.getInvNroreg()
-				+ inventario.getInvEmbarque() + "-" + numeroNombreArchivo[1] + ".tif";
+		if (inventario.getInvNro() != null) {
 
-		// copiamos el archivo con su nuevo nombre
-		try {
-			Path origenPath = Paths.get(pathOrigen + "//" + nombreArchivoOrigen);
-			Path destinoPath = Paths.get(pathDestino + "//" + nuevoNombreArchivo);
+			// armamos el nuevo nombre q tendrá el archivo copiado
+			String nuevoNombreArchivo = inventario.getInvGestion() + inventario.getInvAduana()
+					+ inventario.getInvNroreg() + inventario.getInvEmbarque() + "-" + numeroNombreArchivo[1] + ".tif";
 
-			// NOTA. sobreescribe el fichero de destino si ya existe en el destino
-			Files.copy(origenPath, destinoPath, StandardCopyOption.REPLACE_EXISTING);
-		} catch (FileNotFoundException ex) {
-			LOGGER.log(Level.ERROR, ex.getMessage());
-		} catch (IOException ex) {
-			LOGGER.log(Level.ERROR, ex.getMessage());
+			// copiamos el archivo con su nuevo nombre
+			try {
+				Path origenPath = Paths.get(pathOrigen + "//" + nombreArchivoOrigen);
+				Path destinoPath = Paths.get(pathDestino + "//" + nuevoNombreArchivo);
+
+				// NOTA. sobreescribe el fichero de destino si ya existe en el destino
+				Files.copy(origenPath, destinoPath, StandardCopyOption.REPLACE_EXISTING);
+			} catch (FileNotFoundException ex) {
+				LOGGER.log(Level.ERROR, ex.getMessage());
+			} catch (IOException ex) {
+				LOGGER.log(Level.ERROR, ex.getMessage());
+			}
+
+			ArchivoResultadoDTO archivoResultado = new ArchivoResultadoDTO();
+			archivoResultado.setInventario(inventario);
+			archivoResultado.setNuevoNombreArchivo(nuevoNombreArchivo);
+			archivoResultado.setTipoDocArchivo(numeroNombreArchivo[1]);
+
+			return archivoResultado;
+		} else {
+			return null;
 		}
 
-		ArchivoResultadoDTO archivoResultado = new ArchivoResultadoDTO();
-		archivoResultado.setInventario(inventario);
-		archivoResultado.setNuevoNombreArchivo(nuevoNombreArchivo);
-		archivoResultado.setTipoDocArchivo(numeroNombreArchivo[1]);
-
-		return archivoResultado;
 	}
 
 	/**
@@ -648,29 +688,34 @@ public class DigitalizacionController {
 		inventario = inventarioService.buscarPorNroInventario(nroInventario, invRecinto, fechaProcesoInicio,
 				fechaProcesoFin);
 
-		// armamos el nuevo nombre q tendrá el archivo copiado
-		String nuevoNombreArchivo = inventario.getInvGestion() + inventario.getInvAduana() + inventario.getInvNroreg()
-				+ inventario.getInvEmbarque() + "-" + numeroNombreArchivo[1] + ".tif";
+		if (inventario.getInvNro() != null) {
 
-		// copiamos el archivo con su nuevo nombre
-		try {
-			Path origenPath = Paths.get(pathOrigen + "//" + nombreArchivoOrigen);
-			Path destinoPath = Paths.get(pathDestino + "//" + nuevoNombreArchivo);
+			// armamos el nuevo nombre q tendrá el archivo copiado
+			String nuevoNombreArchivo = inventario.getInvGestion() + inventario.getInvAduana()
+					+ inventario.getInvNroreg() + inventario.getInvEmbarque() + "-" + numeroNombreArchivo[1] + ".tif";
 
-			// NOTA. sobreescribe el fichero de destino si ya existe en el destino
-			Files.copy(origenPath, destinoPath, StandardCopyOption.REPLACE_EXISTING);
-		} catch (FileNotFoundException ex) {
-			LOGGER.log(Level.ERROR, ex.getMessage());
-		} catch (IOException ex) {
-			LOGGER.log(Level.ERROR, ex.getMessage());
+			// copiamos el archivo con su nuevo nombre
+			try {
+				Path origenPath = Paths.get(pathOrigen + "//" + nombreArchivoOrigen);
+				Path destinoPath = Paths.get(pathDestino + "//" + nuevoNombreArchivo);
+
+				// NOTA. sobreescribe el fichero de destino si ya existe en el destino
+				Files.copy(origenPath, destinoPath, StandardCopyOption.REPLACE_EXISTING);
+			} catch (FileNotFoundException ex) {
+				LOGGER.log(Level.ERROR, ex.getMessage());
+			} catch (IOException ex) {
+				LOGGER.log(Level.ERROR, ex.getMessage());
+			}
+
+			ArchivoResultadoDTO archivoResultado = new ArchivoResultadoDTO();
+			archivoResultado.setInventario(inventario);
+			archivoResultado.setNuevoNombreArchivo(nuevoNombreArchivo);
+			archivoResultado.setTipoDocArchivo(numeroNombreArchivo[1]);
+
+			return archivoResultado;
+		} else {
+			return null;
 		}
-
-		ArchivoResultadoDTO archivoResultado = new ArchivoResultadoDTO();
-		archivoResultado.setInventario(inventario);
-		archivoResultado.setNuevoNombreArchivo(nuevoNombreArchivo);
-		archivoResultado.setTipoDocArchivo(numeroNombreArchivo[1]);
-
-		return archivoResultado;
 	}
 
 	/**
