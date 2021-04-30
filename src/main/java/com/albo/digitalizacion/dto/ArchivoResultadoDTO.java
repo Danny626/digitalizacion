@@ -1,5 +1,6 @@
 package com.albo.digitalizacion.dto;
 
+import com.albo.digitalizacion.model.TipoDocumento;
 import com.albo.soa.model.DocArchivo;
 import com.albo.soa.model.Inventario;
 
@@ -7,11 +8,13 @@ public class ArchivoResultadoDTO {
 
 	private String nuevoNombreArchivo;
 	private Inventario inventario;
-	private String tipoDocArchivo;
 	private String gestion;
 	private String codAduana;
 	private String nroArchivo;
 	private DocArchivo docArchivo;
+	private TipoDocumento tipoDocumento;
+	private String codError;
+	private String tramite;
 
 	public String getNuevoNombreArchivo() {
 		return nuevoNombreArchivo;
@@ -27,14 +30,6 @@ public class ArchivoResultadoDTO {
 
 	public void setInventario(Inventario inventario) {
 		this.inventario = inventario;
-	}
-
-	public String getTipoDocArchivo() {
-		return tipoDocArchivo;
-	}
-
-	public void setTipoDocArchivo(String tipoDocArchivo) {
-		this.tipoDocArchivo = tipoDocArchivo;
 	}
 
 	public String getGestion() {
@@ -67,6 +62,30 @@ public class ArchivoResultadoDTO {
 
 	public void setDocArchivo(DocArchivo docArchivo) {
 		this.docArchivo = docArchivo;
+	}
+
+	public TipoDocumento getTipoDocumento() {
+		return tipoDocumento;
+	}
+
+	public void setTipoDocumento(TipoDocumento tipoDocumento) {
+		this.tipoDocumento = tipoDocumento;
+	}
+
+	public String getCodError() {
+		return codError;
+	}
+
+	public void setCodError(String codError) {
+		this.codError = codError;
+	}
+
+	public String getTramite() {
+		return tramite;
+	}
+
+	public void setTramite(String tramite) {
+		this.tramite = tramite;
 	}
 
 }
