@@ -228,8 +228,8 @@ public class DigitalizacionController {
 				// -- Certificados de salida
 				if (nombreArch.charAt(0) == 'C') {
 					ArchivoResultadoDTO archivoResultado = this.copiarRenombrarArchivoCertificadoSalida(nombreArch,
-							directorioOrigen, pathDestino, recinto, fechaProceso, fechaFinalProceso,
-							recintoRes.getRecCoda().toString(), fechaFinalProceso, gestion);
+							directorioOrigen, pathDestino, recinto, fechaProceso, recintoRes.getRecCoda().toString(),
+							fechaInicioProceso, fechaFinalProceso, gestion);
 
 					// verificamos si existió algún error al copiarRenombrarArchivo
 					if (archivoResultado.getCodError() != null) {
@@ -237,37 +237,26 @@ public class DigitalizacionController {
 						Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
 								fechaFinalProceso, directorioOrigen, pathDestino, false);
 
-						String nuevoCodArchivo = "%" + archivoResultado.getNroArchivo();
-
-						// buscamos la factura por el nro de registro
-						Factura factura = new Factura();
-						factura = this.buscarFacturaPorNroReg(nuevoCodArchivo, recinto, archivoResultado.getCodAduana(),
-								archivoResultado.getGestion(), fechaInicioProceso, fechaFinalProceso);
-
-						// TODO falta direccionar este error según la tabla de Error
-						// si no encuentra la factura mandamos error
-						if (factura.getFacturaPK().getFactNro() == null
-								|| factura.getFacturaPK().getFactNro().equals("")) {
-							LOGGER.error("Factura no encontrada para el nro de registro: " + nuevoCodArchivo);
-							System.exit(1);
-						}
-
 						General general = this.registrarGeneral(archivoResultado.getTipoDocumento(),
 								archivoResultado.getNuevoNombreArchivo(), archivoResultado.getCodAduana(),
-								archivoResultado.getTramite(), factura.getFactFecha(), fechaFinalProceso, archivo);
+								archivoResultado.getTramite(), archivoResultado.getFactura().getFactFecha(),
+								fechaFinalProceso, archivo);
 
-						// buscamos el tipo de documento1 de acuerdo al codigo de factura
+						// buscamos el tipo de documento2 de acuerdo al codigo de factura
 						TipoDocumento tipoDocumento2 = new TipoDocumento();
-						if (factura.getFacturaPK().getDocCod().equals("FA")) {
+						if (archivoResultado.getFactura().getFacturaPK().getDocCod().equals("FA")) {
 							tipoDocumento2 = tipoDocumentoService.findById("380").get();
 						}
 
-						String tramite2 = factura.getFacturaPK().getE3Cod() + " "
-								+ factura.getFacturaPK().getE3ofSerie() + " " + factura.getFacturaPK().getFactNro();
+						String tramite2 = archivoResultado.getFactura().getFacturaPK().getE3Cod() + " "
+								+ archivoResultado.getFactura().getFacturaPK().getE3ofSerie() + " "
+								+ archivoResultado.getFactura().getFacturaPK().getFactNro();
 
 						Relacion relacion = this.registrarRelacion(archivoResultado.getTipoDocumento(),
-								archivoResultado.getCodAduana(), archivoResultado.getTramite(), factura.getFactFecha(),
-								tipoDocumento2, factura.getDestCod(), tramite2, factura.getFactFecha());
+								archivoResultado.getCodAduana(), archivoResultado.getTramite(),
+								archivoResultado.getFactura().getFactFecha(), tipoDocumento2,
+								archivoResultado.getFactura().getDestCod(), tramite2,
+								archivoResultado.getFactura().getFactFecha());
 					} else {
 						// registramos el archivo en conflicto y el error
 						ErrorProceso errorProceso = this.registraErrorProceso(nombreArch, fechaFinalProceso,
@@ -545,7 +534,7 @@ public class DigitalizacionController {
 	 * nuevo nombre
 	 **/
 	public ArchivoResultadoDTO copiarRenombrarArchivoCertificadoSalida(String nombreArchivoOrigen, String pathOrigen,
-			String pathDestino, String recinto, String fechaProceso, LocalDateTime fechaProcesoFin, String codAduana,
+			String pathDestino, String recinto, String fechaProceso, String codAduana, LocalDateTime fechaInicioProceso,
 			LocalDateTime fechaFinalProceso, String gestion) {
 
 		ArchivoResultadoDTO archivoResultado = new ArchivoResultadoDTO();
@@ -559,8 +548,8 @@ public class DigitalizacionController {
 		TipoDocumento tipoDocumento = tipoDocumentoService.findById(numeroNombreArchivo[1]).get();
 
 		// armamos el nuevo nombre q tendrá el archivo copiado
-		String nuevoNombreArchivo = fechaProcesoFin.getYear() + codAduana + "C" + "0" + nroArchivo + "-"
-				+ numeroNombreArchivo[1] + ".tif";
+		String nuevoNombreArchivo = gestion + codAduana + "C" + "0" + nroArchivo + "-" + numeroNombreArchivo[1]
+				+ ".tif";
 
 		// verificamos si el registro ya existe en General (codError.E06)
 		// armamos el tramite de acuerdo a como va en la tabla general
@@ -570,6 +559,17 @@ public class DigitalizacionController {
 
 		if (general.getId() != null) {
 			archivoResultado.setCodError("E06");
+			archivoResultado.setTipoDocumento(tipoDocumento);
+			return archivoResultado;
+		}
+
+		// Verificamos si existe un registro factura para el numero de factura que viene
+		// en el nombre del archivo (codError.E13)
+		Factura factura = this.buscarFacturaPorNroReg("%" + nroArchivo, recinto, codAduana, gestion, fechaInicioProceso,
+				fechaFinalProceso);
+
+		if (factura.getFacturaPK().getFactNro() == null || factura.getFacturaPK().getFactNro().equals("")) {
+			archivoResultado.setCodError("E13");
 			archivoResultado.setTipoDocumento(tipoDocumento);
 			return archivoResultado;
 		}
@@ -589,10 +589,11 @@ public class DigitalizacionController {
 
 		archivoResultado.setNuevoNombreArchivo(nuevoNombreArchivo);
 		archivoResultado.setTipoDocumento(tipoDocumento);
-		archivoResultado.setGestion(String.valueOf(fechaProcesoFin.getYear()));
+		archivoResultado.setGestion(gestion);
 		archivoResultado.setCodAduana(codAduana);
 		archivoResultado.setNroArchivo(nroArchivo);
 		archivoResultado.setTramite(tramite);
+		archivoResultado.setFactura(factura);
 
 		return archivoResultado;
 	}

@@ -1,5 +1,6 @@
 package com.albo.digitalizacion.dto;
 
+import com.albo.compusoft.model.Factura;
 import com.albo.digitalizacion.model.TipoDocumento;
 import com.albo.soa.model.DocArchivo;
 import com.albo.soa.model.Inventario;
@@ -7,14 +8,15 @@ import com.albo.soa.model.Inventario;
 public class ArchivoResultadoDTO {
 
 	private String nuevoNombreArchivo;
-	private Inventario inventario;
 	private String gestion;
 	private String codAduana;
 	private String nroArchivo;
-	private DocArchivo docArchivo;
 	private TipoDocumento tipoDocumento;
 	private String codError;
 	private String tramite;
+	private Inventario inventario;
+	private Factura factura;
+	private DocArchivo docArchivo;
 
 	public String getNuevoNombreArchivo() {
 		return nuevoNombreArchivo;
@@ -86,6 +88,14 @@ public class ArchivoResultadoDTO {
 
 	public void setTramite(String tramite) {
 		this.tramite = tramite;
+	}
+
+	public Factura getFactura() {
+		return factura;
+	}
+
+	public void setFactura(Factura factura) {
+		this.factura = factura;
 	}
 
 }
