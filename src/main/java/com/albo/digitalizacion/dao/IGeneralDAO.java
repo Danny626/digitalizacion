@@ -16,11 +16,10 @@ public interface IGeneralDAO extends JpaRepository<General, Long> {
 	@Query("FROM General gral WHERE gral.cnsCodConc = :cnsCodConc " + "AND gral.cnsEmisor = :cnsEmisor "
 			+ "AND gral.tipoDocumento = :tipoDocumento " + "AND gral.archivo.nomArchivo = :nombreArchivoDestino "
 			+ "AND gral.cnsAduTra = :cnsAduTra " + "AND gral.cnsNroTra = :cnsNroTra "
-			+ "AND gral.cnsFechaPro = :cnsFechaPro " + "AND gral.cnsEstado = :cnsEstado")
+			+ "AND gral.cnsFechaPro = :cnsFechaPro")
 	General buscarExistente(@Param("cnsCodConc") String cnsCodConc, @Param("cnsEmisor") String cnsEmisor,
 			@Param("tipoDocumento") TipoDocumento tipoDocumento,
 			@Param("nombreArchivoDestino") String nombreArchivoDestino, @Param("cnsAduTra") String cnsAduTra,
-			@Param("cnsNroTra") String cnsNroTra, @Param("cnsFechaPro") LocalDateTime cnsFechaPro,
-			@Param("cnsEstado") String cnsEstado);
+			@Param("cnsNroTra") String cnsNroTra, @Param("cnsFechaPro") LocalDateTime cnsFechaPro);
 
 }

@@ -17,6 +17,8 @@ public class ArchivoResultadoDTO {
 	private Inventario inventario;
 	private Factura factura;
 	private DocArchivo docArchivo;
+	private String tramite2;
+	private TipoDocumento tipoDocumento2;
 
 	public String getNuevoNombreArchivo() {
 		return nuevoNombreArchivo;
@@ -96,6 +98,22 @@ public class ArchivoResultadoDTO {
 
 	public void setFactura(Factura factura) {
 		this.factura = factura;
+	}
+
+	public String getTramite2() {
+		return tramite2;
+	}
+
+	public void setTramite2(String tramite2) {
+		this.tramite2 = tramite2;
+	}
+
+	public TipoDocumento getTipoDocumento2() {
+		return tipoDocumento2;
+	}
+
+	public void setTipoDocumento2(TipoDocumento tipoDocumento2) {
+		this.tipoDocumento2 = tipoDocumento2;
 	}
 
 }

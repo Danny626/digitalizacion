@@ -43,10 +43,9 @@ public class GeneralServiceImpl implements IGeneralService {
 
 	@Override
 	public General buscarExistente(String cnsCodConc, String cnsEmisor, TipoDocumento tipoDocumento,
-			String nombreArchivoDestino, String cnsAduTra, String cnsNroTra, LocalDateTime cnsFechaPro,
-			String cnsEstado) {
+			String nombreArchivoDestino, String cnsAduTra, String cnsNroTra, LocalDateTime cnsFechaPro) {
 		return generalDao.buscarExistente(cnsCodConc, cnsEmisor, tipoDocumento, nombreArchivoDestino, cnsAduTra,
-				cnsNroTra, cnsFechaPro, cnsEstado);
+				cnsNroTra, cnsFechaPro);
 	}
 
 }

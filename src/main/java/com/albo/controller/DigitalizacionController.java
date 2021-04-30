@@ -242,19 +242,13 @@ public class DigitalizacionController {
 								archivoResultado.getTramite(), archivoResultado.getFactura().getFactFecha(),
 								fechaFinalProceso, archivo);
 
-						// buscamos el tipo de documento2 de acuerdo al codigo de factura
-						TipoDocumento tipoDocumento2 = new TipoDocumento();
-						if (archivoResultado.getFactura().getFacturaPK().getDocCod().equals("FA")) {
-							tipoDocumento2 = tipoDocumentoService.findById("380").get();
-						}
-
 						String tramite2 = archivoResultado.getFactura().getFacturaPK().getE3Cod() + " "
 								+ archivoResultado.getFactura().getFacturaPK().getE3ofSerie() + " "
 								+ archivoResultado.getFactura().getFacturaPK().getFactNro();
 
 						Relacion relacion = this.registrarRelacion(archivoResultado.getTipoDocumento(),
 								archivoResultado.getCodAduana(), archivoResultado.getTramite(),
-								archivoResultado.getFactura().getFactFecha(), tipoDocumento2,
+								archivoResultado.getFactura().getFactFecha(), archivoResultado.getTipoDocumento2(),
 								archivoResultado.getFactura().getDestCod(), tramite2,
 								archivoResultado.getFactura().getFactFecha());
 					} else {
@@ -278,26 +272,15 @@ public class DigitalizacionController {
 						Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
 								fechaFinalProceso, directorioOrigen, pathDestino, false);
 
-						// armamos el tramite de acuerdo a como va en la tabla general
-						String tramite1 = archivoResultado.getTramite();
-
 						General general = this.registrarGeneral(archivoResultado.getTipoDocumento(),
-								archivoResultado.getNuevoNombreArchivo(), archivoResultado.getCodAduana(), tramite1,
-								archivoResultado.getDocArchivo().getDarFecha(), fechaFinalProceso, archivo);
+								archivoResultado.getNuevoNombreArchivo(), archivoResultado.getCodAduana(),
+								archivoResultado.getTramite(), archivoResultado.getDocArchivo().getDarFecha(),
+								fechaFinalProceso, archivo);
 
-						TipoDocumento tipoDocumento1 = new TipoDocumento();
-						// verificamos si el documento de salida es una dui o dim para asignarle la
-						// codificación pertinente
-						String tipoDocTram1 = archivoResultado.getDocArchivo().getDocArchivoPK().getDarCod()
-								.substring(7);
-						if (tipoDocTram1.charAt(0) == 'D' || tipoDocTram1.charAt(0) == 'C') {
-							// buscamos el tipo de documento1 de acuerdo al codigo de DUA
-							tipoDocumento1 = tipoDocumentoService.findById("960").get();
-						}
-
-						Relacion relacion = this.registrarRelacion(tipoDocumento1, archivoResultado.getCodAduana(),
-								tramite1, archivoResultado.getDocArchivo().getDarFecha(),
-								archivoResultado.getTipoDocumento(), archivoResultado.getCodAduana(), tramite1,
+						Relacion relacion = this.registrarRelacion(archivoResultado.getTipoDocumento2(),
+								archivoResultado.getCodAduana(), archivoResultado.getTramite(),
+								archivoResultado.getDocArchivo().getDarFecha(), archivoResultado.getTipoDocumento(),
+								archivoResultado.getCodAduana(), archivoResultado.getTramite(),
 								archivoResultado.getDocArchivo().getDarFecha());
 					} else {
 						// registramos el archivo en conflicto y el error
@@ -500,7 +483,7 @@ public class DigitalizacionController {
 
 		// verificamos si el registro ya existe en General (codError.E06)
 		General general = this.buscaGeneralExistente(nitConcesionario, nitConcesionario, tipoDocumento,
-				nuevoNombreArchivo, inventario.getInvAduana(), inventario.getInvParte(), fechaFinalProceso, "A");
+				nuevoNombreArchivo, inventario.getInvAduana(), inventario.getInvParte(), fechaFinalProceso);
 
 		if (general.getId() != null) {
 			archivoResultado.setCodError("E06");
@@ -555,7 +538,7 @@ public class DigitalizacionController {
 		// armamos el tramite de acuerdo a como va en la tabla general
 		String tramite = gestion + " " + codAduana + " C 0" + nroArchivo;
 		General general = this.buscaGeneralExistente(nitConcesionario, nitConcesionario, tipoDocumento,
-				nuevoNombreArchivo, codAduana, tramite, fechaFinalProceso, "A");
+				nuevoNombreArchivo, codAduana, tramite, fechaFinalProceso);
 
 		if (general.getId() != null) {
 			archivoResultado.setCodError("E06");
@@ -570,6 +553,26 @@ public class DigitalizacionController {
 
 		if (factura.getFacturaPK().getFactNro() == null || factura.getFacturaPK().getFactNro().equals("")) {
 			archivoResultado.setCodError("E13");
+			archivoResultado.setTipoDocumento(tipoDocumento);
+			return archivoResultado;
+		}
+
+		// verificamos si el registro ya existe en Relacion (codError.E15)
+		String tramite2 = factura.getFacturaPK().getE3Cod() + " " + factura.getFacturaPK().getE3ofSerie() + " "
+				+ factura.getFacturaPK().getFactNro();
+
+		// buscamos el tipo de documento2 de acuerdo al codigo de factura
+		TipoDocumento tipoDocumento2 = new TipoDocumento();
+		if (archivoResultado.getFactura().getFacturaPK().getDocCod().equals("FA")) {
+			tipoDocumento2 = tipoDocumentoService.findById("380").get();
+		}
+
+		Relacion relacion = this.buscaRelacionExistente(codAduana, tramite, nitConcesionario, factura.getFactFecha(),
+				factura.getDestCod(), tramite2, nitConcesionario, factura.getFactFecha(), tipoDocumento,
+				tipoDocumento2);
+
+		if (relacion.getId() != null) {
+			archivoResultado.setCodError("E15");
 			archivoResultado.setTipoDocumento(tipoDocumento);
 			return archivoResultado;
 		}
@@ -594,6 +597,8 @@ public class DigitalizacionController {
 		archivoResultado.setNroArchivo(nroArchivo);
 		archivoResultado.setTramite(tramite);
 		archivoResultado.setFactura(factura);
+		archivoResultado.setTipoDocumento2(tipoDocumento2);
+		archivoResultado.setTramite2(tramite2);
 
 		return archivoResultado;
 	}
@@ -614,7 +619,7 @@ public class DigitalizacionController {
 		String nroConstanciaEntrega = numeroNombreArchivo[0].replaceFirst("S", "");
 
 		// buscamos el tipo de documento de acuerdo al codigo
-		TipoDocumento tipoDocumento = tipoDocumentoService.findById(numeroNombreArchivo[1]).get();
+		TipoDocumento tipoDocumento2 = tipoDocumentoService.findById(numeroNombreArchivo[1]).get();
 
 		// buscamos la declaración única aduanera(dui, dim) correspondiente al nro de
 		// salida dado en el nombre del archivo
@@ -627,7 +632,7 @@ public class DigitalizacionController {
 		// válida(dui C, due C, dim D) para continuar (codError.E08)
 		if (codSalida.charAt(0) != 'C' || codSalida.charAt(0) != 'D') {
 			archivoResultado.setCodError("E08");
-			archivoResultado.setTipoDocumento(tipoDocumento);
+			archivoResultado.setTipoDocumento(tipoDocumento2);
 			return archivoResultado;
 		}
 
@@ -655,12 +660,32 @@ public class DigitalizacionController {
 		// verificamos si el registro ya existe en General (codError.E06)
 		// armamos el tramite de acuerdo a como va en la tabla general
 		String tramite = gestion + " " + codAduana + " " + serialTramiteDim + " " + nroArchivo;
-		General general = this.buscaGeneralExistente(nitConcesionario, nitConcesionario, tipoDocumento,
-				nuevoNombreArchivo, codAduana, tramite, fechaFinalProceso, "A");
+		General general = this.buscaGeneralExistente(nitConcesionario, nitConcesionario, tipoDocumento2,
+				nuevoNombreArchivo, codAduana, tramite, fechaFinalProceso);
 
 		if (general.getId() != null) {
 			archivoResultado.setCodError("E06");
-			archivoResultado.setTipoDocumento(tipoDocumento);
+			archivoResultado.setTipoDocumento(tipoDocumento2);
+			return archivoResultado;
+		}
+
+		// verificamos si el registro ya existe en Relacion (codError.E15)
+		TipoDocumento tipoDocumento1 = new TipoDocumento();
+		// verificamos si el documento de salida es una dui o dim para asignarle la
+		// codificación pertinente
+		String tipoDocTram1 = docArchivo.getDocArchivoPK().getDarCod().substring(7);
+		if (tipoDocTram1.charAt(0) == 'D' || tipoDocTram1.charAt(0) == 'C') {
+			// buscamos el tipo de documento1 de acuerdo al codigo de DUA valida
+			// (dui,due,dim)
+			tipoDocumento1 = tipoDocumentoService.findById("960").get();
+		}
+
+		Relacion relacion = this.buscaRelacionExistente(codAduana, tramite, nitConcesionario, docArchivo.getDarFecha(),
+				codAduana, tramite, nitConcesionario, docArchivo.getDarFecha(), tipoDocumento1, tipoDocumento2);
+
+		if (relacion.getId() != null) {
+			archivoResultado.setCodError("E15");
+			archivoResultado.setTipoDocumento(tipoDocumento2);
 			return archivoResultado;
 		}
 
@@ -678,7 +703,7 @@ public class DigitalizacionController {
 		}
 
 		archivoResultado.setNuevoNombreArchivo(nuevoNombreArchivo);
-		archivoResultado.setTipoDocumento(tipoDocumento);
+		archivoResultado.setTipoDocumento(tipoDocumento2);
 		archivoResultado.setCodAduana(codAduana);
 		// TODO verificar si adjuntamos aqui la gestion actual o la gestión de
 		// dar_gestion
@@ -686,6 +711,7 @@ public class DigitalizacionController {
 		archivoResultado.setNroArchivo(nroArchivo);
 		archivoResultado.setDocArchivo(docArchivo);
 		archivoResultado.setTramite(tramite);
+		archivoResultado.setTipoDocumento2(tipoDocumento1);
 
 		return archivoResultado;
 	}
@@ -726,7 +752,7 @@ public class DigitalizacionController {
 
 		// verificamos si el registro ya existe en General (codError.E06)
 		General general = this.buscaGeneralExistente(nitConcesionario, nitConcesionario, tipoDocumento,
-				nuevoNombreArchivo, inventario.getInvAduana(), inventario.getInvParte(), fechaFinalProceso, "A");
+				nuevoNombreArchivo, inventario.getInvAduana(), inventario.getInvParte(), fechaFinalProceso);
 
 		if (general.getId() != null) {
 			archivoResultado.setCodError("E06");
@@ -880,12 +906,24 @@ public class DigitalizacionController {
 	 * funcion q revisa si el registro ya existe en General return null si no existe
 	 */
 	public General buscaGeneralExistente(String cnsCodConc, String cnsEmisor, TipoDocumento tipoDocumento,
-			String nombreArchivoDestino, String cnsAduTra, String cnsNroTra, LocalDateTime cnsFechaPro,
-			String cnsEstado) {
+			String nombreArchivoDestino, String cnsAduTra, String cnsNroTra, LocalDateTime cnsFechaPro) {
 
 		General general = this.generalService.buscarExistente(cnsCodConc, cnsEmisor, tipoDocumento,
-				nombreArchivoDestino, cnsAduTra, cnsNroTra, cnsFechaPro, cnsEstado);
+				nombreArchivoDestino, cnsAduTra, cnsNroTra, cnsFechaPro);
 		return general;
+	}
+
+	/**
+	 * funcion q revisa si el registro ya existe en Relacion return null si no
+	 * existe
+	 */
+	public Relacion buscaRelacionExistente(String cnsAduTra1, String cnsNroTra1, String cnsEmisor1,
+			LocalDateTime cnsFechaEmi1, String cnsAduTra2, String cnsNroTra2, String cnsEmisor2,
+			LocalDateTime cnsFechaEmi2, TipoDocumento tipoDocumento1, TipoDocumento tipoDocumento2) {
+
+		Relacion relacion = relacionService.buscarExistente(cnsAduTra1, cnsNroTra1, cnsEmisor1, cnsFechaEmi1,
+				cnsAduTra2, cnsNroTra2, cnsEmisor2, cnsFechaEmi2, tipoDocumento1, tipoDocumento2);
+		return relacion;
 	}
 
 	/**

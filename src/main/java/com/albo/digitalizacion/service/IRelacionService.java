@@ -1,7 +1,13 @@
 package com.albo.digitalizacion.service;
 
+import java.time.LocalDateTime;
+
 import com.albo.digitalizacion.model.Relacion;
+import com.albo.digitalizacion.model.TipoDocumento;
 
 public interface IRelacionService extends IService<Relacion, Long> {
 
+	Relacion buscarExistente(String cnsAduTra1, String cnsNroTra1, String cnsEmisor1, LocalDateTime cnsFechaEmi1,
+			String cnsAduTra2, String cnsNroTra2, String cnsEmisor2, LocalDateTime cnsFechaEmi2,
+			TipoDocumento tipoDocumento1, TipoDocumento tipoDocumento2);
 }
