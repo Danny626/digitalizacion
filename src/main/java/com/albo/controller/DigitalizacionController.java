@@ -107,7 +107,6 @@ public class DigitalizacionController {
 	public ResponseEntity<?> inventarioPorNroInv() {
 
 		Inventario inventario = new Inventario();
-		inventario = inventarioService.buscarPorNroInvPrueba("00022");
 
 		JSONObject jo = new JSONObject(inventario);
 
@@ -364,7 +363,7 @@ public class DigitalizacionController {
 	}
 
 	/** Buscar Factura **/
-	public Factura buscarFacturaPorNroReg(String reg, String recinto, String codAduana, String gestion,
+	public List<Factura> buscarFacturaPorNroReg(String reg, String recinto, String codAduana, String gestion,
 			LocalDateTime fechaInicioProceso, LocalDateTime fechaFinalProceso) {
 
 		// nroReg tal como se encuentra en la tabla factura
@@ -466,9 +465,20 @@ public class DigitalizacionController {
 
 		// buscamos el parte correspondiente al nro de inventario en un intervalo de
 		// tiempo de inventarios registrados en bd (invFecha)
-		Inventario inventario = new Inventario();
-		inventario = inventarioService.buscarPorNroInventario(nroInventario, invRecinto, fechaInicioProceso,
+		List<Inventario> listInventario = new ArrayList<>();
+		listInventario = inventarioService.buscarPorNroInventario(nroInventario, invRecinto, fechaInicioProceso,
 				fechaFinalProceso);
+
+		// si existe más de un resultado en listInventario, devolvemos error
+		// (codError.E19)
+		if (listInventario.size() > 1) {
+			archivoResultado.setCodError("E19");
+			archivoResultado.setTipoDocumento(tipoDocumento);
+			return archivoResultado;
+		}
+
+		Inventario inventario = new Inventario();
+		inventario = listInventario.get(0);
 
 		// si no existe el parte correspondiente, devolvemos null (codError.E05)
 		if (inventario.getInvNro() == null) {
@@ -548,8 +558,20 @@ public class DigitalizacionController {
 
 		// Verificamos si existe un registro factura para el numero de factura que viene
 		// en el nombre del archivo (codError.E13)
-		Factura factura = this.buscarFacturaPorNroReg("%" + nroArchivo, recinto, codAduana, gestion, fechaInicioProceso,
+		List<Factura> listFactura = new ArrayList<>();
+		listFactura = this.buscarFacturaPorNroReg("%" + nroArchivo, recinto, codAduana, gestion, fechaInicioProceso,
 				fechaFinalProceso);
+
+		// si existe más de un resultado en listFactura, devolvemos error
+		// (codError.E19)
+		if (listFactura.size() > 1) {
+			archivoResultado.setCodError("E19");
+			archivoResultado.setTipoDocumento(tipoDocumento);
+			return archivoResultado;
+		}
+
+		Factura factura = new Factura();
+		factura = listFactura.get(0);
 
 		if (factura.getFacturaPK().getFactNro() == null || factura.getFacturaPK().getFactNro().equals("")) {
 			archivoResultado.setCodError("E13");
@@ -735,9 +757,20 @@ public class DigitalizacionController {
 
 		// buscamos el parte correspondiente al nro de inventario en un intervalo de
 		// tiempo de inventarios registrados en bd (invFecha)
-		Inventario inventario = new Inventario();
-		inventario = inventarioService.buscarPorNroInventario(nroInventario, invRecinto, fechaProcesoInicio,
+		List<Inventario> listInventario = new ArrayList<>();
+		listInventario = inventarioService.buscarPorNroInventario(nroInventario, invRecinto, fechaProcesoInicio,
 				fechaFinalProceso);
+
+		// si existe más de un resultado en listInventario, devolvemos error
+		// (codError.E19)
+		if (listInventario.size() > 1) {
+			archivoResultado.setCodError("E19");
+			archivoResultado.setTipoDocumento(tipoDocumento);
+			return archivoResultado;
+		}
+
+		Inventario inventario = new Inventario();
+		inventario = listInventario.get(0);
 
 		// si no existe el parte correspondiente, devolvemos null (codError.E05)
 		if (inventario.getInvNro() == null) {

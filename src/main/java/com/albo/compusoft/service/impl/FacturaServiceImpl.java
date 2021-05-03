@@ -43,7 +43,7 @@ public class FacturaServiceImpl implements IFacturaService {
 	}
 
 	@Override
-	public Factura buscarPorNroReg(String e3Cod, String factNroreg, LocalDateTime fechaInicioProceso,
+	public List<Factura> buscarPorNroReg(String e3Cod, String factNroreg, LocalDateTime fechaInicioProceso,
 			LocalDateTime fechaFinProceso) {
 		return facturaDao.buscarPorNroReg(e3Cod, factNroreg, fechaInicioProceso, fechaFinProceso);
 	}

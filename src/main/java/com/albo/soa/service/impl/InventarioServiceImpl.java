@@ -47,14 +47,9 @@ public class InventarioServiceImpl implements IInventarioService {
 	}
 
 	@Override
-	public Inventario buscarPorNroInventario(String invNro, String invRecinto, LocalDateTime fechaProcesoInicio,
+	public List<Inventario> buscarPorNroInventario(String invNro, String invRecinto, LocalDateTime fechaProcesoInicio,
 			LocalDateTime fechaProcesoFin) {
 		return inventarioDao.buscarPorNroInventario(invNro, invRecinto, fechaProcesoInicio, fechaProcesoFin);
-	}
-
-	@Override
-	public Inventario buscarPorNroInvPrueba(String invNro) {
-		return inventarioDao.buscarPorNroInvPrueba(invNro);
 	}
 
 }
