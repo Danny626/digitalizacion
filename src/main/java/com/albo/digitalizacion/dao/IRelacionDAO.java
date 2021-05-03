@@ -13,10 +13,11 @@ import com.albo.digitalizacion.model.TipoDocumento;
 @Repository
 public interface IRelacionDAO extends JpaRepository<Relacion, Long> {
 
-	@Query("FROM Relacion rel WHERE rel.cnsAduTra1 = :cnsAduTra1 AND rel.cnsNroTra1 = :cnsNroTra1, "
+	@Query("FROM Relacion rel WHERE rel.cnsAduTra1 = :cnsAduTra1 AND rel.cnsNroTra1 = :cnsNroTra1 "
 			+ "AND rel.cnsEmisor1 = :cnsEmisor1 AND rel.cnsFechaEmi1 = :cnsFechaEmi1 AND rel.cnsAduTra2 = :cnsAduTra2 "
 			+ "AND rel.cnsNroTra2 = :cnsNroTra2 AND rel.cnsEmisor2 = :cnsEmisor2 AND rel.cnsFechaEmi2 = :cnsFechaEmi2 "
-			+ "AND rel.cnsEstado = 'A' AND rel.tipoDocumento1 = :tipoDocumento1 AND rel.tipoDocumento2 = :tipoDocumento2")
+			+ "AND rel.tipoDocumento1.codigo = :tipoDocumento1 AND rel.tipoDocumento2.codigo = :tipoDocumento2 "
+			+ "AND rel.cnsEstado = 'A'")
 	Relacion buscarExistente(@Param("cnsAduTra1") String cnsAduTra1, @Param("cnsNroTra1") String cnsNroTra1,
 			@Param("cnsEmisor1") String cnsEmisor1, @Param("cnsFechaEmi1") LocalDateTime cnsFechaEmi1,
 			@Param("cnsAduTra2") String cnsAduTra2, @Param("cnsNroTra2") String cnsNroTra2,

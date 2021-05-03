@@ -52,4 +52,9 @@ public class InventarioServiceImpl implements IInventarioService {
 		return inventarioDao.buscarPorNroInventario(invNro, invRecinto, fechaProcesoInicio, fechaProcesoFin);
 	}
 
+	@Override
+	public Inventario buscarPorNroInvPrueba(String invNro) {
+		return inventarioDao.buscarPorNroInvPrueba(invNro);
+	}
+
 }

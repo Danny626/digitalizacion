@@ -15,8 +15,8 @@ import com.albo.digitalizacion.model.Total;
 public interface ITotalDAO extends JpaRepository<Total, Long> {
 
 	@Query("SELECT new com.albo.digitalizacion.dto.TipoDocContGeneralDTO(COUNT(gral.tipoDocumento) as cantidad, gral.tipoDocumento as tipoDocumento) "
-			+ "FROM General gral JOIN gral.tipoDocumento WHERE gral.cnsFechaPro = :fechaProceso "
-			+ "GROUP BY gral.tipoDocumento, gral.tipoDocumento")
+			+ "FROM General gral JOIN gral.tipoDocumento " + "WHERE gral.cnsFechaPro = :fechaProceso "
+			+ "AND gral.cnsEstado = 'A' GROUP BY gral.tipoDocumento, gral.tipoDocumento")
 	List<TipoDocContGeneralDTO> buscarDistintos(@Param("fechaProceso") LocalDateTime fechaProceso);
 
 }

@@ -104,10 +104,10 @@ public class DigitalizacionController {
 	private IPrefijoService prefijoService;
 
 	@GetMapping(value = "/prueba", produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<?> inventarioPorParte() {
+	public ResponseEntity<?> inventarioPorNroInv() {
 
 		Inventario inventario = new Inventario();
-		inventario = inventarioService.buscarPorParte("422202133888EUKOJPCL1706279", "2021");
+		inventario = inventarioService.buscarPorNroInvPrueba("00022");
 
 		JSONObject jo = new JSONObject(inventario);
 

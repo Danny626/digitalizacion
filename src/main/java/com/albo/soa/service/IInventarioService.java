@@ -12,4 +12,6 @@ public interface IInventarioService extends IService<Inventario, String> {
 	Inventario buscarPorNroInventario(String invNro, String invRecinto, LocalDateTime fechaProcesoInicio,
 			LocalDateTime fechaProcesoFin);
 
+	Inventario buscarPorNroInvPrueba(String invNro);
+
 }
