@@ -149,7 +149,6 @@ public class DigitalizacionController {
 		String pathDestino = this.creaPathDestino(recinto, trimestre, directorioDestino, gestion);
 
 		if (pathDestino == "error") {
-			System.exit(1);
 			return new ResponseEntity<>("Error creando el Path Destino", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
@@ -487,9 +486,13 @@ public class DigitalizacionController {
 			return archivoResultado;
 		}
 
+		// eliminamos los caracteres especiales q pudiera tener la primera parte del
+		// nuevo nombre del archivo
+		String nuevoNombreArchivoFisico = this.eliminaCaracteresEspeciales(inventario.getInvGestion()
+				+ inventario.getInvAduana() + inventario.getInvNroreg() + inventario.getInvEmbarque());
+
 		// armamos el nuevo nombre q tendrá el archivo copiado
-		String nuevoNombreArchivo = inventario.getInvGestion() + inventario.getInvAduana() + inventario.getInvNroreg()
-				+ inventario.getInvEmbarque() + "-" + numeroNombreArchivo[1] + ".tif";
+		String nuevoNombreArchivo = nuevoNombreArchivoFisico + "-" + numeroNombreArchivo[1] + ".tif";
 
 		// verificamos si el registro ya existe en General (codError.E06)
 		General general = this.buscaGeneralExistente(nitConcesionario, nitConcesionario, tipoDocumento,
@@ -540,9 +543,13 @@ public class DigitalizacionController {
 		// buscamos el tipo de documento de acuerdo al codigo
 		TipoDocumento tipoDocumento = tipoDocumentoService.findById(numeroNombreArchivo[1]).get();
 
+		// eliminamos los caracteres especiales q pudiera tener la primera parte del
+		// nuevo nombre del archivo
+		String nuevoNombreArchivoFisico = this
+				.eliminaCaracteresEspeciales(gestion + codAduana + "C" + "0" + nroArchivo);
+
 		// armamos el nuevo nombre q tendrá el archivo copiado
-		String nuevoNombreArchivo = gestion + codAduana + "C" + "0" + nroArchivo + "-" + numeroNombreArchivo[1]
-				+ ".tif";
+		String nuevoNombreArchivo = nuevoNombreArchivoFisico + "-" + numeroNombreArchivo[1] + ".tif";
 
 		// verificamos si el registro ya existe en General (codError.E06)
 		// armamos el tramite de acuerdo a como va en la tabla general
@@ -676,8 +683,12 @@ public class DigitalizacionController {
 		// obtenemos solo la parte del nro de archivo con sus ceros (000099)
 		String nroArchivo = codSalida.substring(1);
 
+		// eliminamos los caracteres especiales q pudiera tener la primera parte del
+		// nuevo nombre del archivo
+		String nuevoNombreArchivoFisico = this.eliminaCaracteresEspeciales(gestion + codAduana + codSalida);
+
 		// armamos el nuevo nombre q tendrá el archivo copiado
-		String nuevoNombreArchivo = gestion + codAduana + codSalida + "-" + numeroNombreArchivo[1] + ".tif";
+		String nuevoNombreArchivo = nuevoNombreArchivoFisico + "-" + numeroNombreArchivo[1] + ".tif";
 
 		// verificamos si el registro ya existe en General (codError.E06)
 		// armamos el tramite de acuerdo a como va en la tabla general
@@ -779,9 +790,13 @@ public class DigitalizacionController {
 			return archivoResultado;
 		}
 
+		// eliminamos los caracteres especiales q pudiera tener la primera parte del
+		// nuevo nombre del archivo
+		String nuevoNombreArchivoFisico = this.eliminaCaracteresEspeciales(inventario.getInvGestion()
+				+ inventario.getInvAduana() + inventario.getInvNroreg() + inventario.getInvEmbarque());
+
 		// armamos el nuevo nombre q tendrá el archivo copiado
-		String nuevoNombreArchivo = inventario.getInvGestion() + inventario.getInvAduana() + inventario.getInvNroreg()
-				+ inventario.getInvEmbarque() + "-" + numeroNombreArchivo[1] + ".tif";
+		String nuevoNombreArchivo = nuevoNombreArchivoFisico + "-" + numeroNombreArchivo[1] + ".tif";
 
 		// verificamos si el registro ya existe en General (codError.E06)
 		General general = this.buscaGeneralExistente(nitConcesionario, nitConcesionario, tipoDocumento,
@@ -973,6 +988,13 @@ public class DigitalizacionController {
 				archivoResultado.getCodError(), archivo, fechaFinalProceso);
 
 		return errorProceso;
+	}
+
+	/*
+	 * función que elimina todos lo caracteres no alfanumericos
+	 */
+	public String eliminaCaracteresEspeciales(String cadena) {
+		return cadena.replaceAll("[^a-zA-Z0-9]", "");
 	}
 
 }
