@@ -63,6 +63,10 @@ public class Relacion implements Serializable {
 	@JoinColumn(name = "tipo_documento2", nullable = false, referencedColumnName = "codigo")
 	private TipoDocumento tipoDocumento2;
 
+	@JsonSerialize(using = ToStringSerializer.class)
+	@Column(name = "fec_pro")
+	private LocalDateTime fecPro;
+
 	public Long getId() {
 		return id;
 	}
@@ -157,6 +161,14 @@ public class Relacion implements Serializable {
 
 	public void setTipoDocumento2(TipoDocumento tipoDocumento2) {
 		this.tipoDocumento2 = tipoDocumento2;
+	}
+
+	public LocalDateTime getFecPro() {
+		return fecPro;
+	}
+
+	public void setFecPro(LocalDateTime fecPro) {
+		this.fecPro = fecPro;
 	}
 
 }
