@@ -31,7 +31,7 @@ public class Archivo implements Serializable {
 	private Long id;
 
 	// archivo destino
-	@Column(name = "nom_archivo", nullable = false, length = 100)
+	@Column(name = "nom_archivo", length = 100)
 	private String nomArchivo;
 
 	@Column(name = "origen", nullable = false, length = 100)

@@ -1,5 +1,6 @@
 package com.albo.digitalizacion.service.impl;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -7,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.albo.digitalizacion.dao.ITipoErrorDAO;
+import com.albo.digitalizacion.dto.CantidadTipoErrorDTO;
 import com.albo.digitalizacion.model.TipoError;
 import com.albo.digitalizacion.service.ITipoErrorService;
 
@@ -37,6 +39,11 @@ public class TipoErrorServiceImpl implements ITipoErrorService {
 	public String deleteById(String id) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public List<CantidadTipoErrorDTO> buscarTotalPorTipoError(LocalDateTime fechaFinalProceso) {
+		return tipoErrorDao.buscarTotalPorTipoError(fechaFinalProceso);
 	}
 
 }

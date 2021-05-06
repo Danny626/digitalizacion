@@ -12,13 +12,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -32,6 +32,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.albo.compusoft.model.Factura;
 import com.albo.compusoft.service.IFacturaService;
 import com.albo.digitalizacion.dto.ArchivoResultadoDTO;
+import com.albo.digitalizacion.dto.CantidadTipoErrorDTO;
+import com.albo.digitalizacion.dto.ResultadoProcesoDTO;
 import com.albo.digitalizacion.dto.TipoDocContGeneralDTO;
 import com.albo.digitalizacion.model.Archivo;
 import com.albo.digitalizacion.model.ErrorProceso;
@@ -106,13 +108,15 @@ public class DigitalizacionController {
 	@GetMapping(value = "/prueba", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> inventarioPorNroInv() {
 
-		Inventario inventario = new Inventario();
+		// armamos la respuesta con los totales obtenidos del proceso
+		LocalDateTime fechaFinalProceso = this.fechaStringToDate("31-03-2021 23:59:59");
+		ResultadoProcesoDTO resultadoProceso = this.calculoTotalesProceso(fechaFinalProceso, 10944);
 
-		JSONObject jo = new JSONObject(inventario);
+//		JSONObject jo = new JSONObject(resultadoProceso);
 
-		System.out.println(jo);
+//		System.out.println(jo);
 
-		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
+		return new ResponseEntity<ResultadoProcesoDTO>(resultadoProceso, HttpStatus.OK);
 	}
 
 	/**
@@ -155,9 +159,10 @@ public class DigitalizacionController {
 		try {
 
 			// cargamos los archivos del directorio seleccionado
-			List<String> listaArchivos = new ArrayList<String>();
-			listaArchivos = this.listFilesUsingFilesList(directorioOrigen);
+			List<File> listaArchivos = this.listaArchivosDirectorio(directorioOrigen);
 			Collections.sort(listaArchivos);
+
+			LOGGER.info("Cantidad archivos a procesar: " + listaArchivos.size());
 
 			// buscamos el codigo de aduana del recinto
 			Recinto recintoRes = new Recinto();
@@ -173,15 +178,21 @@ public class DigitalizacionController {
 			LocalDateTime fechaFinalProceso = this.fechaStringToDate(fechaProceso + " 23:59:59");
 			LOGGER.info("fechaFinalProceso: " + fechaFinalProceso);
 
+			int contadorProceso = 1;
+
 			// recorremos los archivos cargados para procesarlos
-			for (String nombreArch : listaArchivos) {
+			for (File file : listaArchivos) {
+				String nombreArch = file.getName();
+				LOGGER.info(
+						contadorProceso++ + " de " + listaArchivos.size() + "." + " Procesando archivo: " + nombreArch);
+
 				// verificamos la nomenclatura
 				// TODO mejorar o no la nomenclatura o solo mencionarlos
 				String codError = this.revisaNomenclatura(nombreArch);
 
 				if (!codError.equals("")) {
 					// registramos el archivo en conflicto
-					String tdoc = nombreArch.substring(8);
+					String tdoc = nombreArch.substring(8, 11);
 					Archivo archivo = this.registrarArchivo(nombreArch, null, fechaFinalProceso, directorioOrigen, null,
 							true);
 
@@ -192,7 +203,9 @@ public class DigitalizacionController {
 					ErrorProceso errorProceso = this.registrarErrorProceso(recinto, tipoDocumento, codError, archivo,
 							fechaFinalProceso);
 
-					LOGGER.error("Existió un error al copiarRenombrarArchivo: ", errorProceso);
+					LOGGER.error("Error al procesar: " + errorProceso.getArchivo().getOrigen() + " => "
+							+ errorProceso.getTipoError().getCodError() + " "
+							+ errorProceso.getTipoError().getDescripcion());
 				}
 
 				// procesamos el archivo de acuerdo a su tipo
@@ -203,7 +216,7 @@ public class DigitalizacionController {
 							directorioOrigen, pathDestino, recinto, fechaInicioProceso, fechaFinalProceso);
 
 					// verificamos si existió algún error al copiarRenombrarArchivo
-					if (archivoResultado.getCodError() != null) {
+					if (archivoResultado.getCodError() == null) {
 
 						Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
 								fechaFinalProceso, directorioOrigen, pathDestino, false);
@@ -219,7 +232,9 @@ public class DigitalizacionController {
 						ErrorProceso errorProceso = this.registraErrorProceso(nombreArch, fechaFinalProceso,
 								directorioOrigen, recinto, archivoResultado);
 
-						LOGGER.error("Existió un error al copiarRenombrarArchivo: ", errorProceso);
+						LOGGER.error("Error al procesar: " + errorProceso.getArchivo().getOrigen() + " => "
+								+ errorProceso.getTipoError().getCodError() + " "
+								+ errorProceso.getTipoError().getDescripcion());
 					}
 				}
 
@@ -230,7 +245,7 @@ public class DigitalizacionController {
 							fechaInicioProceso, fechaFinalProceso, gestion);
 
 					// verificamos si existió algún error al copiarRenombrarArchivo
-					if (archivoResultado.getCodError() != null) {
+					if (archivoResultado.getCodError() == null) {
 
 						Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
 								fechaFinalProceso, directorioOrigen, pathDestino, false);
@@ -248,13 +263,15 @@ public class DigitalizacionController {
 								archivoResultado.getCodAduana(), archivoResultado.getTramite(),
 								archivoResultado.getFactura().getFactFecha(), archivoResultado.getTipoDocumento2(),
 								archivoResultado.getFactura().getDestCod(), tramite2,
-								archivoResultado.getFactura().getFactFecha());
+								archivoResultado.getFactura().getFactFecha(), fechaFinalProceso);
 					} else {
 						// registramos el archivo en conflicto y el error
 						ErrorProceso errorProceso = this.registraErrorProceso(nombreArch, fechaFinalProceso,
 								directorioOrigen, recinto, archivoResultado);
 
-						LOGGER.error("Existió un error al copiarRenombrarArchivo: ", errorProceso);
+						LOGGER.error("Error al procesar: " + errorProceso.getArchivo().getOrigen() + " => "
+								+ errorProceso.getTipoError().getCodError() + " "
+								+ errorProceso.getTipoError().getDescripcion());
 					}
 				}
 
@@ -265,7 +282,7 @@ public class DigitalizacionController {
 							serialTramiteDim, fechaFinalProceso);
 
 					// verificamos si existió algún error al copiarRenombrarArchivo
-					if (archivoResultado.getCodError() != null) {
+					if (archivoResultado.getCodError() == null) {
 
 						Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
 								fechaFinalProceso, directorioOrigen, pathDestino, false);
@@ -279,13 +296,15 @@ public class DigitalizacionController {
 								archivoResultado.getCodAduana(), archivoResultado.getTramite(),
 								archivoResultado.getDocArchivo().getDarFecha(), archivoResultado.getTipoDocumento(),
 								archivoResultado.getCodAduana(), archivoResultado.getTramite(),
-								archivoResultado.getDocArchivo().getDarFecha());
+								archivoResultado.getDocArchivo().getDarFecha(), fechaFinalProceso);
 					} else {
 						// registramos el archivo en conflicto y el error
 						ErrorProceso errorProceso = this.registraErrorProceso(nombreArch, fechaFinalProceso,
 								directorioOrigen, recinto, archivoResultado);
 
-						LOGGER.error("Existió un error al copiarRenombrarArchivo: ", errorProceso);
+						LOGGER.error("Error al procesar: " + errorProceso.getArchivo().getOrigen() + " => "
+								+ errorProceso.getTipoError().getCodError() + " "
+								+ errorProceso.getTipoError().getDescripcion());
 					}
 				}
 
@@ -295,7 +314,7 @@ public class DigitalizacionController {
 							directorioOrigen, pathDestino, recinto, fechaInicioProceso, fechaFinalProceso);
 
 					// verificamos si existió algún error al copiarRenombrarArchivo
-					if (archivoResultado.getCodError() != null) {
+					if (archivoResultado.getCodError() == null) {
 
 						Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
 								fechaFinalProceso, directorioOrigen, pathDestino, false);
@@ -310,13 +329,20 @@ public class DigitalizacionController {
 						ErrorProceso errorProceso = this.registraErrorProceso(nombreArch, fechaFinalProceso,
 								directorioOrigen, recinto, archivoResultado);
 
-						LOGGER.error("Existió un error al copiarRenombrarArchivo: ", errorProceso);
+						LOGGER.error("Error al procesar: " + errorProceso.getArchivo().getOrigen() + " => "
+								+ errorProceso.getTipoError().getCodError() + " "
+								+ errorProceso.getTipoError().getDescripcion());
 					}
 				}
 
 			}
 
-			return new ResponseEntity<String>("Archivos procesados: " + listaArchivos.size(), HttpStatus.OK);
+			LOGGER.info("Proceso finalizado");
+
+			// armamos la respuesta con los totales obtenidos del proceso
+			ResultadoProcesoDTO resultadoProceso = this.calculoTotalesProceso(fechaFinalProceso, contadorProceso);
+
+			return new ResponseEntity<ResultadoProcesoDTO>(resultadoProceso, HttpStatus.OK);
 
 		} catch (Exception e) {
 			return new ResponseEntity<>(e, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -403,7 +429,7 @@ public class DigitalizacionController {
 		}
 
 		// verificamos si el sufijo es válido (codError. E03)
-		String sufijo = nombreArchivo.substring(8);
+		String sufijo = nombreArchivo.substring(8, 11);
 		if (tipoDocumentoService.findById(sufijo).isEmpty()) {
 			return "E03";
 		}
@@ -419,22 +445,22 @@ public class DigitalizacionController {
 		// verificamos si existen incongruencias entre prefijo y sufijo (codError. E21)
 		switch (prefijo) {
 		case "I":
-			if (sufijo != "901") {
+			if (!sufijo.equals("901")) {
 				return "E21";
 			}
 			break;
 		case "C":
-			if (sufijo != "B74") {
-				return "B74";
+			if (!sufijo.equals("B74")) {
+				return "E21";
 			}
 			break;
 		case "S":
-			if (sufijo != "932") {
+			if (!sufijo.equals("932")) {
 				return "E21";
 			}
 			break;
 		case "P":
-			if (sufijo != "901") {
+			if (!sufijo.equals("901")) {
 				return "E21";
 			}
 			break;
@@ -476,15 +502,14 @@ public class DigitalizacionController {
 			return archivoResultado;
 		}
 
-		Inventario inventario = new Inventario();
-		inventario = listInventario.get(0);
-
-		// si no existe el parte correspondiente, devolvemos null (codError.E05)
-		if (inventario.getInvNro() == null) {
+		// si no existe el parte correspondiente (codError.E05)
+		if (listInventario.size() == 0) {
 			archivoResultado.setCodError("E05");
 			archivoResultado.setTipoDocumento(tipoDocumento);
 			return archivoResultado;
 		}
+
+		Inventario inventario = listInventario.get(0);
 
 		// eliminamos los caracteres especiales q pudiera tener la primera parte del
 		// nuevo nombre del archivo
@@ -495,10 +520,11 @@ public class DigitalizacionController {
 		String nuevoNombreArchivo = nuevoNombreArchivoFisico + "-" + numeroNombreArchivo[1] + ".tif";
 
 		// verificamos si el registro ya existe en General (codError.E06)
-		General general = this.buscaGeneralExistente(nitConcesionario, nitConcesionario, tipoDocumento,
-				nuevoNombreArchivo, inventario.getInvAduana(), inventario.getInvParte(), fechaFinalProceso);
+		Optional<General> optionalGeneral = this.buscaGeneralExistente(nitConcesionario, nitConcesionario,
+				tipoDocumento, nuevoNombreArchivo, inventario.getInvAduana(), inventario.getInvParte(),
+				fechaFinalProceso);
 
-		if (general.getId() != null) {
+		if (optionalGeneral.isPresent()) {
 			archivoResultado.setCodError("E06");
 			archivoResultado.setTipoDocumento(tipoDocumento);
 			return archivoResultado;
@@ -554,10 +580,10 @@ public class DigitalizacionController {
 		// verificamos si el registro ya existe en General (codError.E06)
 		// armamos el tramite de acuerdo a como va en la tabla general
 		String tramite = gestion + " " + codAduana + " C 0" + nroArchivo;
-		General general = this.buscaGeneralExistente(nitConcesionario, nitConcesionario, tipoDocumento,
-				nuevoNombreArchivo, codAduana, tramite, fechaFinalProceso);
+		Optional<General> optionalGeneral = this.buscaGeneralExistente(nitConcesionario, nitConcesionario,
+				tipoDocumento, nuevoNombreArchivo, codAduana, tramite, fechaFinalProceso);
 
-		if (general.getId() != null) {
+		if (optionalGeneral.isPresent()) {
 			archivoResultado.setCodError("E06");
 			archivoResultado.setTipoDocumento(tipoDocumento);
 			return archivoResultado;
@@ -592,15 +618,16 @@ public class DigitalizacionController {
 
 		// buscamos el tipo de documento2 de acuerdo al codigo de factura
 		TipoDocumento tipoDocumento2 = new TipoDocumento();
-		if (archivoResultado.getFactura().getFacturaPK().getDocCod().equals("FA")) {
+		if (factura.getFacturaPK().getDocCod().equals("FA")) {
 			tipoDocumento2 = tipoDocumentoService.findById("380").get();
 		}
 
-		Relacion relacion = this.buscaRelacionExistente(codAduana, tramite, nitConcesionario, factura.getFactFecha(),
-				factura.getDestCod(), tramite2, nitConcesionario, factura.getFactFecha(), tipoDocumento,
-				tipoDocumento2);
+		// buscamos si la relación ya existe registrada (codError.E15)
+		Optional<Relacion> optionalRelacion = this.buscaRelacionExistente(codAduana, tramite, nitConcesionario,
+				factura.getFactFecha(), factura.getDestCod(), tramite2, nitConcesionario, factura.getFactFecha(),
+				tipoDocumento, tipoDocumento2);
 
-		if (relacion.getId() != null) {
+		if (optionalRelacion.isPresent()) {
 			archivoResultado.setCodError("E15");
 			archivoResultado.setTipoDocumento(tipoDocumento);
 			return archivoResultado;
@@ -659,7 +686,7 @@ public class DigitalizacionController {
 
 		// verificamos si el registro doc_archivo (dar_cod) pertenece a una DUA
 		// válida(dui C, due C, dim D) para continuar (codError.E08)
-		if (codSalida.charAt(0) != 'C' || codSalida.charAt(0) != 'D') {
+		if (codSalida.charAt(0) != 'C' && codSalida.charAt(0) != 'D') {
 			archivoResultado.setCodError("E08");
 			archivoResultado.setTipoDocumento(tipoDocumento2);
 			return archivoResultado;
@@ -693,10 +720,10 @@ public class DigitalizacionController {
 		// verificamos si el registro ya existe en General (codError.E06)
 		// armamos el tramite de acuerdo a como va en la tabla general
 		String tramite = gestion + " " + codAduana + " " + serialTramiteDim + " " + nroArchivo;
-		General general = this.buscaGeneralExistente(nitConcesionario, nitConcesionario, tipoDocumento2,
-				nuevoNombreArchivo, codAduana, tramite, fechaFinalProceso);
+		Optional<General> optionalGeneral = this.buscaGeneralExistente(nitConcesionario, nitConcesionario,
+				tipoDocumento2, nuevoNombreArchivo, codAduana, tramite, fechaFinalProceso);
 
-		if (general.getId() != null) {
+		if (optionalGeneral.isPresent()) {
 			archivoResultado.setCodError("E06");
 			archivoResultado.setTipoDocumento(tipoDocumento2);
 			return archivoResultado;
@@ -713,10 +740,12 @@ public class DigitalizacionController {
 			tipoDocumento1 = tipoDocumentoService.findById("960").get();
 		}
 
-		Relacion relacion = this.buscaRelacionExistente(codAduana, tramite, nitConcesionario, docArchivo.getDarFecha(),
-				codAduana, tramite, nitConcesionario, docArchivo.getDarFecha(), tipoDocumento1, tipoDocumento2);
+		// buscamos si la relación ya existe registrada (codError.E15)
+		Optional<Relacion> optionalRelacion = this.buscaRelacionExistente(codAduana, tramite, nitConcesionario,
+				docArchivo.getDarFecha(), codAduana, tramite, nitConcesionario, docArchivo.getDarFecha(),
+				tipoDocumento1, tipoDocumento2);
 
-		if (relacion.getId() != null) {
+		if (optionalRelacion.isPresent()) {
 			archivoResultado.setCodError("E15");
 			archivoResultado.setTipoDocumento(tipoDocumento2);
 			return archivoResultado;
@@ -780,15 +809,14 @@ public class DigitalizacionController {
 			return archivoResultado;
 		}
 
-		Inventario inventario = new Inventario();
-		inventario = listInventario.get(0);
-
-		// si no existe el parte correspondiente, devolvemos null (codError.E05)
-		if (inventario.getInvNro() == null) {
+		// si no existe el parte correspondiente (codError.E05)
+		if (listInventario.size() == 0) {
 			archivoResultado.setCodError("E05");
 			archivoResultado.setTipoDocumento(tipoDocumento);
 			return archivoResultado;
 		}
+
+		Inventario inventario = listInventario.get(0);
 
 		// eliminamos los caracteres especiales q pudiera tener la primera parte del
 		// nuevo nombre del archivo
@@ -799,10 +827,11 @@ public class DigitalizacionController {
 		String nuevoNombreArchivo = nuevoNombreArchivoFisico + "-" + numeroNombreArchivo[1] + ".tif";
 
 		// verificamos si el registro ya existe en General (codError.E06)
-		General general = this.buscaGeneralExistente(nitConcesionario, nitConcesionario, tipoDocumento,
-				nuevoNombreArchivo, inventario.getInvAduana(), inventario.getInvParte(), fechaFinalProceso);
+		Optional<General> optionalGeneral = this.buscaGeneralExistente(nitConcesionario, nitConcesionario,
+				tipoDocumento, nuevoNombreArchivo, inventario.getInvAduana(), inventario.getInvParte(),
+				fechaFinalProceso);
 
-		if (general.getId() != null) {
+		if (optionalGeneral.isPresent()) {
 			archivoResultado.setCodError("E06");
 			archivoResultado.setTipoDocumento(tipoDocumento);
 			return archivoResultado;
@@ -892,7 +921,8 @@ public class DigitalizacionController {
 	 * @return
 	 */
 	public Relacion registrarRelacion(TipoDocumento tipoDoc1, String codAdu1, String tra1, LocalDateTime fechaEmi1,
-			TipoDocumento tipoDoc2, String codAdu2, String tra2, LocalDateTime fechaEmi2) {
+			TipoDocumento tipoDoc2, String codAdu2, String tra2, LocalDateTime fechaEmi2,
+			LocalDateTime fechaFinalProceso) {
 
 		Relacion relacion = new Relacion();
 		relacion.setTipoDocumento1(tipoDoc1);
@@ -906,6 +936,7 @@ public class DigitalizacionController {
 		relacion.setCnsEmisor2(nitConcesionario);
 		relacion.setCnsFechaEmi2(fechaEmi2);
 		relacion.setCnsEstado("A");
+		relacion.setFecPro(fechaFinalProceso);
 
 		return this.relacionService.saveOrUpdate(relacion);
 	}
@@ -943,9 +974,10 @@ public class DigitalizacionController {
 	}
 
 	/** función q devuelve un listado de los archivos en un directorio **/
-	public List<String> listFilesUsingFilesList(String dir) throws IOException {
+	public List<File> listaArchivosDirectorio(String dir) throws IOException {
 		try (Stream<Path> stream = Files.list(Paths.get(dir))) {
-			return stream.filter(file -> !Files.isDirectory(file)).map(Path::getFileName).map(Path::toString)
+			return stream.sorted().filter(file -> !Files.isDirectory(file))
+					.filter(Path -> Path.toString().toUpperCase().endsWith(".TIF")).map(Path::toFile)
 					.collect(Collectors.toList());
 		}
 	}
@@ -953,25 +985,27 @@ public class DigitalizacionController {
 	/**
 	 * funcion q revisa si el registro ya existe en General return null si no existe
 	 */
-	public General buscaGeneralExistente(String cnsCodConc, String cnsEmisor, TipoDocumento tipoDocumento,
+	public Optional<General> buscaGeneralExistente(String cnsCodConc, String cnsEmisor, TipoDocumento tipoDocumento,
 			String nombreArchivoDestino, String cnsAduTra, String cnsNroTra, LocalDateTime cnsFechaPro) {
 
-		General general = this.generalService.buscarExistente(cnsCodConc, cnsEmisor, tipoDocumento,
+		Optional<General> optionalGeneral = this.generalService.buscarExistente(cnsCodConc, cnsEmisor, tipoDocumento,
 				nombreArchivoDestino, cnsAduTra, cnsNroTra, cnsFechaPro);
-		return general;
+
+		return optionalGeneral;
 	}
 
 	/**
 	 * funcion q revisa si el registro ya existe en Relacion return null si no
 	 * existe
 	 */
-	public Relacion buscaRelacionExistente(String cnsAduTra1, String cnsNroTra1, String cnsEmisor1,
+	public Optional<Relacion> buscaRelacionExistente(String cnsAduTra1, String cnsNroTra1, String cnsEmisor1,
 			LocalDateTime cnsFechaEmi1, String cnsAduTra2, String cnsNroTra2, String cnsEmisor2,
 			LocalDateTime cnsFechaEmi2, TipoDocumento tipoDocumento1, TipoDocumento tipoDocumento2) {
 
-		Relacion relacion = relacionService.buscarExistente(cnsAduTra1, cnsNroTra1, cnsEmisor1, cnsFechaEmi1,
-				cnsAduTra2, cnsNroTra2, cnsEmisor2, cnsFechaEmi2, tipoDocumento1, tipoDocumento2);
-		return relacion;
+		Optional<Relacion> optionalRelacion = relacionService.buscarExistente(cnsAduTra1, cnsNroTra1, cnsEmisor1,
+				cnsFechaEmi1, cnsAduTra2, cnsNroTra2, cnsEmisor2, cnsFechaEmi2, tipoDocumento1, tipoDocumento2);
+
+		return optionalRelacion;
 	}
 
 	/**
@@ -995,6 +1029,26 @@ public class DigitalizacionController {
 	 */
 	public String eliminaCaracteresEspeciales(String cadena) {
 		return cadena.replaceAll("[^a-zA-Z0-9]", "");
+	}
+
+	/*
+	 * función que obtiene los totales del resultado final del proceso
+	 */
+	public ResultadoProcesoDTO calculoTotalesProceso(LocalDateTime fechaFinalProceso, int totalArchivosProcesados) {
+		ResultadoProcesoDTO resultadoProceso = new ResultadoProcesoDTO();
+
+		List<CantidadTipoErrorDTO> listaCantidadTipoError = tipoErrorService.buscarTotalPorTipoError(fechaFinalProceso);
+		Integer totalRegistrosError = errorProcesoService.buscarTotalRegistrosError(fechaFinalProceso);
+		Integer totalRegistrosGeneral = generalService.buscarTotalRegistrosGeneral(fechaFinalProceso);
+		Integer totalRegistrosRelacion = relacionService.buscarTotalRegistrosRelacion(fechaFinalProceso);
+
+		resultadoProceso.setListaCantidadTipoError(listaCantidadTipoError);
+		resultadoProceso.setTotalArchivosProcesados(totalArchivosProcesados);
+		resultadoProceso.setTotalRegistrosError(totalRegistrosError);
+		resultadoProceso.setTotalRegistrosGeneral(totalRegistrosGeneral);
+		resultadoProceso.setTotalRegistrosRelacion(totalRegistrosRelacion);
+
+		return resultadoProceso;
 	}
 
 }

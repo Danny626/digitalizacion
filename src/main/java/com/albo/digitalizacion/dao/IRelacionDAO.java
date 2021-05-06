@@ -16,7 +16,7 @@ public interface IRelacionDAO extends JpaRepository<Relacion, Long> {
 	@Query("FROM Relacion rel WHERE rel.cnsAduTra1 = :cnsAduTra1 AND rel.cnsNroTra1 = :cnsNroTra1 "
 			+ "AND rel.cnsEmisor1 = :cnsEmisor1 AND rel.cnsFechaEmi1 = :cnsFechaEmi1 AND rel.cnsAduTra2 = :cnsAduTra2 "
 			+ "AND rel.cnsNroTra2 = :cnsNroTra2 AND rel.cnsEmisor2 = :cnsEmisor2 AND rel.cnsFechaEmi2 = :cnsFechaEmi2 "
-			+ "AND rel.tipoDocumento1.codigo = :tipoDocumento1 AND rel.tipoDocumento2.codigo = :tipoDocumento2 "
+			+ "AND rel.tipoDocumento1 = :tipoDocumento1 AND rel.tipoDocumento2 = :tipoDocumento2 "
 			+ "AND rel.cnsEstado = 'A'")
 	Relacion buscarExistente(@Param("cnsAduTra1") String cnsAduTra1, @Param("cnsNroTra1") String cnsNroTra1,
 			@Param("cnsEmisor1") String cnsEmisor1, @Param("cnsFechaEmi1") LocalDateTime cnsFechaEmi1,
@@ -24,5 +24,8 @@ public interface IRelacionDAO extends JpaRepository<Relacion, Long> {
 			@Param("cnsEmisor2") String cnsEmisor2, @Param("cnsFechaEmi2") LocalDateTime cnsFechaEmi2,
 			@Param("tipoDocumento1") TipoDocumento tipoDocumento1,
 			@Param("tipoDocumento2") TipoDocumento tipoDocumento2);
+
+	@Query("SELECT COUNT(*) as cantidad FROM Relacion rel WHERE rel.fecPro = :fechaFinalProceso")
+	Integer buscarTotalRegistrosRelacion(@Param("fechaFinalProceso") LocalDateTime fechaFinalProceso);
 
 }

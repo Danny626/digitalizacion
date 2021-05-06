@@ -1,5 +1,6 @@
 package com.albo.digitalizacion.service.impl;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,6 +38,11 @@ public class ErrorProcesoServiceImpl implements IErrorProcesoService {
 	public String deleteById(Long id) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public Integer buscarTotalRegistrosError(LocalDateTime fechaFinalProceso) {
+		return errorDao.buscarTotalRegistrosError(fechaFinalProceso);
 	}
 
 }
