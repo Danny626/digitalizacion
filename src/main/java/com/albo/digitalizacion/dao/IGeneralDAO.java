@@ -22,7 +22,8 @@ public interface IGeneralDAO extends JpaRepository<General, Long> {
 			@Param("nombreArchivoDestino") String nombreArchivoDestino, @Param("cnsAduTra") String cnsAduTra,
 			@Param("cnsNroTra") String cnsNroTra, @Param("cnsFechaPro") LocalDateTime cnsFechaPro);
 
-	@Query("SELECT COUNT(*) as cantidad FROM General gral WHERE gral.cnsFechaPro = :fechaFinalProceso")
-	Integer buscarTotalRegistrosGeneral(@Param("fechaFinalProceso") LocalDateTime fechaFinalProceso);
+	@Query("SELECT COUNT(*) as cantidad FROM General gral WHERE gral.cnsFechaPro = :fechaFinalProceso AND gral.cnsAduTra = :codRecinto")
+	Integer buscarTotalRegistrosGeneral(@Param("fechaFinalProceso") LocalDateTime fechaFinalProceso,
+			@Param("codRecinto") String codRecinto);
 
 }

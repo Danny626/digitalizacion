@@ -11,5 +11,5 @@ public interface IGeneralService extends IService<General, Long> {
 	Optional<General> buscarExistente(String cnsCodConc, String cnsEmisor, TipoDocumento tipoDocumento,
 			String nombreArchivoDestino, String cnsAduTra, String cnsNroTra, LocalDateTime cnsFechaPro);
 
-	Integer buscarTotalRegistrosGeneral(LocalDateTime fechaFinalProceso);
+	Integer buscarTotalRegistrosGeneral(LocalDateTime fechaFinalProceso, String codRecinto);
 }

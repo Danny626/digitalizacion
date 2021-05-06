@@ -25,7 +25,8 @@ public interface IRelacionDAO extends JpaRepository<Relacion, Long> {
 			@Param("tipoDocumento1") TipoDocumento tipoDocumento1,
 			@Param("tipoDocumento2") TipoDocumento tipoDocumento2);
 
-	@Query("SELECT COUNT(*) as cantidad FROM Relacion rel WHERE rel.fecPro = :fechaFinalProceso")
-	Integer buscarTotalRegistrosRelacion(@Param("fechaFinalProceso") LocalDateTime fechaFinalProceso);
+	@Query("SELECT COUNT(*) as cantidad FROM Relacion rel WHERE rel.fecPro = :fechaFinalProceso AND rel.cnsAduTra1 = :codRecinto")
+	Integer buscarTotalRegistrosRelacion(@Param("fechaFinalProceso") LocalDateTime fechaFinalProceso,
+			@Param("codRecinto") String codRecinto);
 
 }

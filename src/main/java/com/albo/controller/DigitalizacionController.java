@@ -110,7 +110,7 @@ public class DigitalizacionController {
 
 		// armamos la respuesta con los totales obtenidos del proceso
 		LocalDateTime fechaFinalProceso = this.fechaStringToDate("31-03-2021 23:59:59");
-		ResultadoProcesoDTO resultadoProceso = this.calculoTotalesProceso(fechaFinalProceso, 10944);
+		ResultadoProcesoDTO resultadoProceso = this.calculoTotalesProceso(fechaFinalProceso, 10944, "TAM01", "422");
 
 //		JSONObject jo = new JSONObject(resultadoProceso);
 
@@ -340,7 +340,8 @@ public class DigitalizacionController {
 			LOGGER.info("Proceso finalizado");
 
 			// armamos la respuesta con los totales obtenidos del proceso
-			ResultadoProcesoDTO resultadoProceso = this.calculoTotalesProceso(fechaFinalProceso, contadorProceso);
+			ResultadoProcesoDTO resultadoProceso = this.calculoTotalesProceso(fechaFinalProceso, contadorProceso,
+					recinto, recintoRes.getRecCoda().toString());
 
 			return new ResponseEntity<ResultadoProcesoDTO>(resultadoProceso, HttpStatus.OK);
 
@@ -1034,13 +1035,15 @@ public class DigitalizacionController {
 	/*
 	 * función que obtiene los totales del resultado final del proceso
 	 */
-	public ResultadoProcesoDTO calculoTotalesProceso(LocalDateTime fechaFinalProceso, int totalArchivosProcesados) {
+	public ResultadoProcesoDTO calculoTotalesProceso(LocalDateTime fechaFinalProceso, int totalArchivosProcesados,
+			String recinto, String codRecinto) {
 		ResultadoProcesoDTO resultadoProceso = new ResultadoProcesoDTO();
 
-		List<CantidadTipoErrorDTO> listaCantidadTipoError = tipoErrorService.buscarTotalPorTipoError(fechaFinalProceso);
-		Integer totalRegistrosError = errorProcesoService.buscarTotalRegistrosError(fechaFinalProceso);
-		Integer totalRegistrosGeneral = generalService.buscarTotalRegistrosGeneral(fechaFinalProceso);
-		Integer totalRegistrosRelacion = relacionService.buscarTotalRegistrosRelacion(fechaFinalProceso);
+		List<CantidadTipoErrorDTO> listaCantidadTipoError = tipoErrorService.buscarTotalPorTipoError(fechaFinalProceso,
+				recinto);
+		Integer totalRegistrosError = errorProcesoService.buscarTotalRegistrosError(fechaFinalProceso, recinto);
+		Integer totalRegistrosGeneral = generalService.buscarTotalRegistrosGeneral(fechaFinalProceso, codRecinto);
+		Integer totalRegistrosRelacion = relacionService.buscarTotalRegistrosRelacion(fechaFinalProceso, codRecinto);
 
 		resultadoProceso.setListaCantidadTipoError(listaCantidadTipoError);
 		resultadoProceso.setTotalArchivosProcesados(totalArchivosProcesados);

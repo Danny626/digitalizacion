@@ -6,6 +6,6 @@ import com.albo.digitalizacion.model.ErrorProceso;
 
 public interface IErrorProcesoService extends IService<ErrorProceso, Long> {
 
-	Integer buscarTotalRegistrosError(LocalDateTime fechaFinalProceso);
+	Integer buscarTotalRegistrosError(LocalDateTime fechaFinalProceso, String recinto);
 
 }

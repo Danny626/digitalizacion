@@ -12,5 +12,5 @@ public interface IRelacionService extends IService<Relacion, Long> {
 			LocalDateTime cnsFechaEmi1, String cnsAduTra2, String cnsNroTra2, String cnsEmisor2,
 			LocalDateTime cnsFechaEmi2, TipoDocumento tipoDocumento1, TipoDocumento tipoDocumento2);
 
-	Integer buscarTotalRegistrosRelacion(LocalDateTime fechaFinalProceso);
+	Integer buscarTotalRegistrosRelacion(LocalDateTime fechaFinalProceso, String codRecinto);
 }

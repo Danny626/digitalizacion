@@ -41,8 +41,8 @@ public class ErrorProcesoServiceImpl implements IErrorProcesoService {
 	}
 
 	@Override
-	public Integer buscarTotalRegistrosError(LocalDateTime fechaFinalProceso) {
-		return errorDao.buscarTotalRegistrosError(fechaFinalProceso);
+	public Integer buscarTotalRegistrosError(LocalDateTime fechaFinalProceso, String recinto) {
+		return errorDao.buscarTotalRegistrosError(fechaFinalProceso, recinto);
 	}
 
 }

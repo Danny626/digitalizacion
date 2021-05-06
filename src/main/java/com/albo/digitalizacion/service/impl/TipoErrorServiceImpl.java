@@ -42,8 +42,8 @@ public class TipoErrorServiceImpl implements ITipoErrorService {
 	}
 
 	@Override
-	public List<CantidadTipoErrorDTO> buscarTotalPorTipoError(LocalDateTime fechaFinalProceso) {
-		return tipoErrorDao.buscarTotalPorTipoError(fechaFinalProceso);
+	public List<CantidadTipoErrorDTO> buscarTotalPorTipoError(LocalDateTime fechaFinalProceso, String recinto) {
+		return tipoErrorDao.buscarTotalPorTipoError(fechaFinalProceso, recinto);
 	}
 
 }

@@ -54,8 +54,8 @@ public class RelacionServiceImpl implements IRelacionService {
 	}
 
 	@Override
-	public Integer buscarTotalRegistrosRelacion(LocalDateTime fechaFinalProceso) {
-		return relacionDao.buscarTotalRegistrosRelacion(fechaFinalProceso);
+	public Integer buscarTotalRegistrosRelacion(LocalDateTime fechaFinalProceso, String codRecinto) {
+		return relacionDao.buscarTotalRegistrosRelacion(fechaFinalProceso, codRecinto);
 	}
 
 }
