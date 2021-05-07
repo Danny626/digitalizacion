@@ -15,7 +15,8 @@ import com.albo.digitalizacion.model.TipoError;
 public interface ITipoErrorDAO extends JpaRepository<TipoError, String> {
 
 	@Query("SELECT new com.albo.digitalizacion.dto.CantidadTipoErrorDTO(COUNT(ep.tipoError) as cantidad, ep.tipoError as tipoError) "
-			+ "FROM ErrorProceso ep JOIN ep.tipoError WHERE ep.fecPro = :fechaFinalProceso GROUP BY ep.tipoError")
-	List<CantidadTipoErrorDTO> buscarTotalPorTipoError(@Param("fechaFinalProceso") LocalDateTime fechaFinalProceso);
+			+ "FROM ErrorProceso ep JOIN ep.tipoError WHERE ep.fecPro = :fechaFinalProceso AND ep.e3Cod = :recinto GROUP BY ep.tipoError")
+	List<CantidadTipoErrorDTO> buscarTotalPorTipoError(@Param("fechaFinalProceso") LocalDateTime fechaFinalProceso,
+			@Param("recinto") String recinto);
 
 }

@@ -12,6 +12,12 @@ import com.albo.digitalizacion.model.ErrorProceso;
 @Repository
 public interface IErrorProcesoDAO extends JpaRepository<ErrorProceso, Long> {
 
+<<<<<<< HEAD
 	@Query("SELECT COUNT(*) as cantidad FROM ErrorProceso ep WHERE ep.fecPro = :fechaFinalProceso")
 	Integer buscarTotalRegistrosError(@Param("fechaFinalProceso") LocalDateTime fechaFinalProceso);
+=======
+	@Query("SELECT COUNT(*) as cantidad FROM ErrorProceso ep WHERE ep.fecPro = :fechaFinalProceso AND ep.e3Cod = :recinto")
+	Integer buscarTotalRegistrosError(@Param("fechaFinalProceso") LocalDateTime fechaFinalProceso,
+			@Param("recinto") String recinto);
+>>>>>>> fixParametroRecinto
 }

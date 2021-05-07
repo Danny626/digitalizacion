@@ -52,8 +52,8 @@ public class GeneralServiceImpl implements IGeneralService {
 	}
 
 	@Override
-	public Integer buscarTotalRegistrosGeneral(LocalDateTime fechaFinalProceso) {
-		return generalDao.buscarTotalRegistrosGeneral(fechaFinalProceso);
+	public Integer buscarTotalRegistrosGeneral(LocalDateTime fechaFinalProceso, String codRecinto) {
+		return generalDao.buscarTotalRegistrosGeneral(fechaFinalProceso, codRecinto);
 	}
 
 }
