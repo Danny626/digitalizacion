@@ -178,13 +178,14 @@ public class DigitalizacionController {
 			LocalDateTime fechaFinalProceso = this.fechaStringToDate(fechaProceso + " 23:59:59");
 			LOGGER.info("fechaFinalProceso: " + fechaFinalProceso);
 
-			int contadorProceso = 1;
+			int contadorProceso = 0;
 
 			// recorremos los archivos cargados para procesarlos
 			for (File file : listaArchivos) {
 				String nombreArch = file.getName();
+				contadorProceso++;
 				LOGGER.info(
-						contadorProceso++ + " de " + listaArchivos.size() + "." + " Procesando archivo: " + nombreArch);
+						contadorProceso + " de " + listaArchivos.size() + "." + " Procesando archivo: " + nombreArch);
 
 				// verificamos la nomenclatura
 				// TODO mejorar o no la nomenclatura o solo mencionarlos
@@ -206,6 +207,8 @@ public class DigitalizacionController {
 					LOGGER.error("Error al procesar: " + errorProceso.getArchivo().getOrigen() + " => "
 							+ errorProceso.getTipoError().getCodError() + " "
 							+ errorProceso.getTipoError().getDescripcion());
+
+					continue;
 				}
 
 				// procesamos el archivo de acuerdo a su tipo
@@ -389,14 +392,14 @@ public class DigitalizacionController {
 	}
 
 	/** Buscar Factura **/
-	public List<Factura> buscarFacturaPorNroReg(String reg, String recinto, String codAduana, String gestion,
+	public List<Factura> buscarFacturaPorNroReg(String reg, String recinto, String codAduana,
 			LocalDateTime fechaInicioProceso, LocalDateTime fechaFinalProceso) {
 
 		// nroReg tal como se encuentra en la tabla factura
-		String nroReg = codAduana + gestion + reg;
+//		String nroReg = codAduana + gestion + reg;
 
 		// buscamos el registro facturado en la tabla factura de compusoft
-		return facturaService.buscarPorNroReg(recinto, nroReg, fechaInicioProceso, fechaFinalProceso);
+		return facturaService.buscarPorNroReg(recinto, reg, fechaInicioProceso, fechaFinalProceso);
 	}
 
 	/** Creamos el path de destino donde se encuentran los archivos renombrados **/
@@ -495,17 +498,17 @@ public class DigitalizacionController {
 		listInventario = inventarioService.buscarPorNroInventario(nroInventario, invRecinto, fechaInicioProceso,
 				fechaFinalProceso);
 
-		// si existe más de un resultado en listInventario, devolvemos error
-		// (codError.E19)
-		if (listInventario.size() > 1) {
-			archivoResultado.setCodError("E19");
+		// si no existe el parte correspondiente (codError.E05)
+		if (listInventario.size() == 0) {
+			archivoResultado.setCodError("E05");
 			archivoResultado.setTipoDocumento(tipoDocumento);
 			return archivoResultado;
 		}
 
-		// si no existe el parte correspondiente (codError.E05)
-		if (listInventario.size() == 0) {
-			archivoResultado.setCodError("E05");
+		// si existe más de un resultado en listInventario, devolvemos error
+		// (codError.E19)
+		if (listInventario.size() > 1) {
+			archivoResultado.setCodError("E19");
 			archivoResultado.setTipoDocumento(tipoDocumento);
 			return archivoResultado;
 		}
@@ -593,8 +596,15 @@ public class DigitalizacionController {
 		// Verificamos si existe un registro factura para el numero de factura que viene
 		// en el nombre del archivo (codError.E13)
 		List<Factura> listFactura = new ArrayList<>();
-		listFactura = this.buscarFacturaPorNroReg("%" + nroArchivo, recinto, codAduana, gestion, fechaInicioProceso,
+		listFactura = this.buscarFacturaPorNroReg("%" + nroArchivo, recinto, codAduana, fechaInicioProceso,
 				fechaFinalProceso);
+
+		// verficamos si existe respuesta factura (codError.E13)
+		if (listFactura.size() == 0) {
+			archivoResultado.setCodError("E13");
+			archivoResultado.setTipoDocumento(tipoDocumento);
+			return archivoResultado;
+		}
 
 		// si existe más de un resultado en listFactura, devolvemos error
 		// (codError.E19)
@@ -604,14 +614,7 @@ public class DigitalizacionController {
 			return archivoResultado;
 		}
 
-		Factura factura = new Factura();
-		factura = listFactura.get(0);
-
-		if (factura.getFacturaPK().getFactNro() == null || factura.getFacturaPK().getFactNro().equals("")) {
-			archivoResultado.setCodError("E13");
-			archivoResultado.setTipoDocumento(tipoDocumento);
-			return archivoResultado;
-		}
+		Factura factura = listFactura.get(0);
 
 		// verificamos si el registro ya existe en Relacion (codError.E15)
 		String tramite2 = factura.getFacturaPK().getE3Cod() + " " + factura.getFacturaPK().getE3ofSerie() + " "
@@ -802,17 +805,17 @@ public class DigitalizacionController {
 		listInventario = inventarioService.buscarPorNroInventario(nroInventario, invRecinto, fechaProcesoInicio,
 				fechaFinalProceso);
 
-		// si existe más de un resultado en listInventario, devolvemos error
-		// (codError.E19)
-		if (listInventario.size() > 1) {
-			archivoResultado.setCodError("E19");
+		// si no existe el parte correspondiente (codError.E05)
+		if (listInventario.size() == 0) {
+			archivoResultado.setCodError("E05");
 			archivoResultado.setTipoDocumento(tipoDocumento);
 			return archivoResultado;
 		}
 
-		// si no existe el parte correspondiente (codError.E05)
-		if (listInventario.size() == 0) {
-			archivoResultado.setCodError("E05");
+		// si existe más de un resultado en listInventario, devolvemos error
+		// (codError.E19)
+		if (listInventario.size() > 1) {
+			archivoResultado.setCodError("E19");
 			archivoResultado.setTipoDocumento(tipoDocumento);
 			return archivoResultado;
 		}
