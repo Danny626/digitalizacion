@@ -42,7 +42,7 @@ public class DocArchivoServiceImpl implements IDocArchivoService {
 	}
 
 	@Override
-	public DocArchivo buscarPorNroSalida(String nroSalida, String codRecinto, Integer gestion) {
+	public Optional<DocArchivo> buscarPorNroSalida(String nroSalida, String codRecinto, Integer gestion) {
 		return docArchivoDao.buscarPorNroSalida(nroSalida, codRecinto, gestion);
 	}
 

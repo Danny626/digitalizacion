@@ -42,14 +42,17 @@ public class InventarioServiceImpl implements IInventarioService {
 	}
 
 	@Override
-	public Inventario buscarPorParte(String invParte, String gestion) {
-		return inventarioDao.buscarPorParte(invParte, gestion);
+	public List<Inventario> buscarPorNroInventarioNoConsolidado(String invNro, String invRecinto,
+			LocalDateTime fechaProcesoInicio, LocalDateTime fechaProcesoFin) {
+		return inventarioDao.buscarPorNroInventarioNoConsolidado(invNro, invRecinto, fechaProcesoInicio,
+				fechaProcesoFin);
 	}
 
 	@Override
-	public List<Inventario> buscarPorNroInventario(String invNro, String invRecinto, LocalDateTime fechaProcesoInicio,
-			LocalDateTime fechaProcesoFin) {
-		return inventarioDao.buscarPorNroInventario(invNro, invRecinto, fechaProcesoInicio, fechaProcesoFin);
+	public List<Inventario> buscarPorNroInventarioConsolidado(String invNro, String invRecinto,
+			LocalDateTime fechaProcesoInicio, LocalDateTime fechaProcesoFin, String consolidado) {
+		return inventarioDao.buscarPorNroInventarioConsolidado(invNro, invRecinto, fechaProcesoInicio, fechaProcesoFin,
+				consolidado);
 	}
 
 }

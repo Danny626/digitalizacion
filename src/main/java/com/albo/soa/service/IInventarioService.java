@@ -8,9 +8,10 @@ import com.albo.soa.model.Inventario;
 
 public interface IInventarioService extends IService<Inventario, String> {
 
-	Inventario buscarPorParte(String invParte, String gestion);
+	List<Inventario> buscarPorNroInventarioNoConsolidado(String invNro, String invRecinto,
+			LocalDateTime fechaProcesoInicio, LocalDateTime fechaProcesoFin);
 
-	List<Inventario> buscarPorNroInventario(String invNro, String invRecinto, LocalDateTime fechaProcesoInicio,
-			LocalDateTime fechaProcesoFin);
+	List<Inventario> buscarPorNroInventarioConsolidado(String invNro, String invRecinto,
+			LocalDateTime fechaProcesoInicio, LocalDateTime fechaProcesoFin, String consolidado);
 
 }

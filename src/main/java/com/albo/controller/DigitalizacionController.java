@@ -182,7 +182,7 @@ public class DigitalizacionController {
 
 			// recorremos los archivos cargados para procesarlos
 			for (File file : listaArchivos) {
-				String nombreArch = file.getName();
+				String nombreArch = file.getName().toUpperCase();
 				contadorProceso++;
 				LOGGER.info(
 						contadorProceso + " de " + listaArchivos.size() + "." + " Procesando archivo: " + nombreArch);
@@ -408,10 +408,10 @@ public class DigitalizacionController {
 		File pathDestino = new File(destino);
 		if (!pathDestino.exists()) {
 			if (pathDestino.mkdirs()) {
-				System.out.println("Path destino creado");
+				LOGGER.info("Path destino creado");
 				return destino;
 			} else {
-				System.out.println("Error al crear path destino");
+				LOGGER.error("Error al crear path destino");
 				return "error";
 			}
 		}
@@ -421,32 +421,31 @@ public class DigitalizacionController {
 	/** función q revisa la nomenclatura del archivo **/
 	public String revisaNomenclatura(String nombreArchivo) {
 
-		// verificamos la longitud de la cadena (codError. E01)
+		// verificamos la longitud de la cadena (codError.E01)
 		if (nombreArchivo.length() != 15) {
 			return "E01";
 		}
 
-		// verificamos si el prefijo es válido (codError. E02)
+		// verificamos si el prefijo es válido (codError.E02)
 		String prefijo = "" + nombreArchivo.charAt(0);
 		if (prefijoService.findById(prefijo).isEmpty()) {
 			return "E02";
 		}
 
-		// verificamos si el sufijo es válido (codError. E03)
+		// verificamos si el sufijo es válido (codError.E03)
 		String sufijo = nombreArchivo.substring(8, 11);
 		if (tipoDocumentoService.findById(sufijo).isEmpty()) {
 			return "E03";
 		}
 
-		// verificamos si el nro. de registro es válido(sólo números) (codError. E04)
-		for (int i = 1; i < 7; i++) {
-			if (!Character.isDigit(nombreArchivo.charAt(i))) {
-				return "E04";
-			}
+		// verificamos si el nro. de registro es válido(sólo números) (codError.E04)
+		String codigoPrefijo = nombreArchivo.substring(1, 7);
+		if (!codigoPrefijo.matches("[0-9]+")) {
+			return "E04";
 		}
 
 		// TODO tendría q tomarse los prefijos de la bd y no de esta forma
-		// verificamos si existen incongruencias entre prefijo y sufijo (codError. E21)
+		// verificamos si existen incongruencias entre prefijo y sufijo (codError.E21)
 		switch (prefijo) {
 		case "I":
 			if (!sufijo.equals("901")) {
@@ -469,7 +468,7 @@ public class DigitalizacionController {
 			}
 			break;
 		default:
-			LOGGER.error("Error verificando codError. E21");
+			LOGGER.error("Error verificando codError.E21");
 		}
 
 		return "";
@@ -495,8 +494,8 @@ public class DigitalizacionController {
 		// buscamos el parte correspondiente al nro de inventario en un intervalo de
 		// tiempo de inventarios registrados en bd (invFecha)
 		List<Inventario> listInventario = new ArrayList<>();
-		listInventario = inventarioService.buscarPorNroInventario(nroInventario, invRecinto, fechaInicioProceso,
-				fechaFinalProceso);
+		listInventario = inventarioService.buscarPorNroInventarioNoConsolidado(nroInventario, invRecinto,
+				fechaInicioProceso, fechaFinalProceso);
 
 		// si no existe el parte correspondiente (codError.E05)
 		if (listInventario.size() == 0) {
@@ -683,14 +682,23 @@ public class DigitalizacionController {
 
 		// buscamos la declaración única aduanera(dui, dim) correspondiente al nro de
 		// salida dado en el nombre del archivo
-		DocArchivo docArchivo = docArchivoService.buscarPorNroSalida("%" + nroConstanciaEntrega, recinto,
+		Optional<DocArchivo> docArchivoOptional = docArchivoService.buscarPorNroSalida(nroConstanciaEntrega, recinto,
 				Integer.valueOf(gestion));
 
-		String codSalida = docArchivo.getDocArchivoPK().getDarCod().substring(7);
+		// verificamos si existe un registro respuesta (codError.E08)
+		if (!docArchivoOptional.isPresent()) {
+			archivoResultado.setCodError("E08");
+			archivoResultado.setTipoDocumento(tipoDocumento2);
+			return archivoResultado;
+		}
+
+		// eliminamos los caractéres especiales del darCod
+		String codSalida = this.eliminaCaracteresEspeciales(docArchivoOptional.get().getDocArchivoPK().getDarCod());
+		codSalida = codSalida.substring(7);
 
 		// verificamos si el registro doc_archivo (dar_cod) pertenece a una DUA
-		// válida(dui C, due C, dim D) para continuar (codError.E08)
-		if (codSalida.charAt(0) != 'C' && codSalida.charAt(0) != 'D') {
+		// válida(dui C, due C, dim D) (codError.E08)
+		if (codSalida.charAt(0) != 'C' && codSalida.charAt(0) != 'D' || !codSalida.substring(1).matches("[0-9]+")) {
 			archivoResultado.setCodError("E08");
 			archivoResultado.setTipoDocumento(tipoDocumento2);
 			return archivoResultado;
@@ -702,24 +710,35 @@ public class DigitalizacionController {
 			codSalida = "C" + codSalida;
 		}
 
+		// Arreglo para los casos D0 a D2
+		if (codSalida.substring(0, 2).equals("D0")) {
+			int endIndex = 1;
+
+			for (int i = 1; i < codSalida.length(); i++) {
+				if (codSalida.charAt(i) == '0') {
+					endIndex++;
+				} else {
+					break;
+				}
+			}
+
+			codSalida = "D" + codSalida.substring(endIndex);
+		}
+
 		// si el tamaño del codSalida es menor a 8 caracteres, le agregamos un 0 extra
-		if (codSalida.length() < 8 && codSalida.charAt(0) == 'C') {
+		while (codSalida.length() < 8 && codSalida.charAt(0) == 'C') {
 			codSalida = codSalida.replaceFirst("C", "C0");
 		}
 
-		if (codSalida.length() < 8 && codSalida.charAt(0) == 'D') {
-			codSalida = codSalida.replaceFirst("D", "D0");
+		while (codSalida.length() < 8 && codSalida.charAt(0) == 'D') {
+			codSalida = codSalida.replaceFirst("D2", "D20");
 		}
 
-		// obtenemos solo la parte del nro de archivo con sus ceros (000099)
+		// obtenemos solo la parte del nro de archivo con sus ceros (0000099)
 		String nroArchivo = codSalida.substring(1);
 
-		// eliminamos los caracteres especiales q pudiera tener la primera parte del
-		// nuevo nombre del archivo
-		String nuevoNombreArchivoFisico = this.eliminaCaracteresEspeciales(gestion + codAduana + codSalida);
-
 		// armamos el nuevo nombre q tendrá el archivo copiado
-		String nuevoNombreArchivo = nuevoNombreArchivoFisico + "-" + numeroNombreArchivo[1] + ".tif";
+		String nuevoNombreArchivo = gestion + codAduana + codSalida + "-" + numeroNombreArchivo[1] + ".tif";
 
 		// verificamos si el registro ya existe en General (codError.E06)
 		// armamos el tramite de acuerdo a como va en la tabla general
@@ -737,8 +756,7 @@ public class DigitalizacionController {
 		TipoDocumento tipoDocumento1 = new TipoDocumento();
 		// verificamos si el documento de salida es una dui o dim para asignarle la
 		// codificación pertinente
-		String tipoDocTram1 = docArchivo.getDocArchivoPK().getDarCod().substring(7);
-		if (tipoDocTram1.charAt(0) == 'D' || tipoDocTram1.charAt(0) == 'C') {
+		if (codSalida.charAt(0) == 'D' || codSalida.charAt(0) == 'C') {
 			// buscamos el tipo de documento1 de acuerdo al codigo de DUA valida
 			// (dui,due,dim)
 			tipoDocumento1 = tipoDocumentoService.findById("960").get();
@@ -746,8 +764,8 @@ public class DigitalizacionController {
 
 		// buscamos si la relación ya existe registrada (codError.E15)
 		Optional<Relacion> optionalRelacion = this.buscaRelacionExistente(codAduana, tramite, nitConcesionario,
-				docArchivo.getDarFecha(), codAduana, tramite, nitConcesionario, docArchivo.getDarFecha(),
-				tipoDocumento1, tipoDocumento2);
+				docArchivoOptional.get().getDarFecha(), codAduana, tramite, nitConcesionario,
+				docArchivoOptional.get().getDarFecha(), tipoDocumento1, tipoDocumento2);
 
 		if (optionalRelacion.isPresent()) {
 			archivoResultado.setCodError("E15");
@@ -775,7 +793,7 @@ public class DigitalizacionController {
 		// dar_gestion
 		archivoResultado.setGestion(gestion);
 		archivoResultado.setNroArchivo(nroArchivo);
-		archivoResultado.setDocArchivo(docArchivo);
+		archivoResultado.setDocArchivo(docArchivoOptional.get());
 		archivoResultado.setTramite(tramite);
 		archivoResultado.setTipoDocumento2(tipoDocumento1);
 
@@ -802,8 +820,8 @@ public class DigitalizacionController {
 		// buscamos el parte correspondiente al nro de inventario en un intervalo de
 		// tiempo de inventarios registrados en bd (invFecha)
 		List<Inventario> listInventario = new ArrayList<>();
-		listInventario = inventarioService.buscarPorNroInventario(nroInventario, invRecinto, fechaProcesoInicio,
-				fechaFinalProceso);
+		listInventario = inventarioService.buscarPorNroInventarioConsolidado(nroInventario, invRecinto,
+				fechaProcesoInicio, fechaFinalProceso, "CON");
 
 		// si no existe el parte correspondiente (codError.E05)
 		if (listInventario.size() == 0) {
@@ -1032,7 +1050,8 @@ public class DigitalizacionController {
 	 * función que elimina todos lo caracteres no alfanumericos
 	 */
 	public String eliminaCaracteresEspeciales(String cadena) {
-		return cadena.replaceAll("[^a-zA-Z0-9]", "");
+		cadena = cadena.replaceAll("[^A-Za-z0-9]+", "");
+		return cadena;
 	}
 
 	/*
