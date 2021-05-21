@@ -43,17 +43,17 @@ public class GeneralServiceImpl implements IGeneralService {
 
 	@Override
 	public Optional<General> buscarExistente(String cnsCodConc, String cnsEmisor, TipoDocumento tipoDocumento,
-			String nombreArchivoDestino, String cnsAduTra, String cnsNroTra, LocalDateTime cnsFechaPro) {
+			String nombreArchivoDestino, String cnsAduTra, String cnsNroTra, String recinto) {
 
 		Optional<General> optGeneral = Optional.ofNullable(generalDao.buscarExistente(cnsCodConc, cnsEmisor,
-				tipoDocumento, nombreArchivoDestino, cnsAduTra, cnsNroTra, cnsFechaPro));
+				tipoDocumento, nombreArchivoDestino, cnsAduTra, cnsNroTra, recinto));
 
 		return optGeneral;
 	}
 
 	@Override
-	public Integer buscarTotalRegistrosGeneral(LocalDateTime fechaFinalProceso, String codRecinto) {
-		return generalDao.buscarTotalRegistrosGeneral(fechaFinalProceso, codRecinto);
+	public Integer buscarTotalRegistrosGeneral(LocalDateTime fechaFinalProceso, String recinto) {
+		return generalDao.buscarTotalRegistrosGeneral(fechaFinalProceso, recinto);
 	}
 
 }

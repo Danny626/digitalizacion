@@ -44,6 +44,9 @@ public class Archivo implements Serializable {
 	@Column(name = "fec_pro")
 	private LocalDateTime fecPro;
 
+	@Column(name = "recinto", length = 10)
+	private String recinto;
+
 	@JsonIgnore
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "archivo")
 	private List<General> generales = new ArrayList<General>();
@@ -100,4 +103,19 @@ public class Archivo implements Serializable {
 		this.errores = errores;
 	}
 
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public String getRecinto() {
+		return recinto;
+	}
+
+	public void setRecinto(String recinto) {
+		this.recinto = recinto;
+	}
 }

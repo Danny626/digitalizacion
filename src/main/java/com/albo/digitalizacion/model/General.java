@@ -57,6 +57,9 @@ public class General implements Serializable {
 	@Column(name = "cns_estado", length = 1)
 	private String cnsEstado;
 
+	@Column(name = "recinto", length = 10)
+	private String recinto;
+
 	public Long getId() {
 		return id;
 	}
@@ -135,5 +138,13 @@ public class General implements Serializable {
 
 	public void setTipoDocumento(TipoDocumento tipoDocumento) {
 		this.tipoDocumento = tipoDocumento;
+	}
+
+	public String getRecinto() {
+		return recinto;
+	}
+
+	public void setRecinto(String recinto) {
+		this.recinto = recinto;
 	}
 }

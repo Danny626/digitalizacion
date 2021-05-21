@@ -1,5 +1,6 @@
 package com.albo.digitalizacion.service.impl;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,6 +38,11 @@ public class ArchivoServiceImpl implements IArchivoService {
 	public String deleteById(Long id) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public Integer buscarTotalRegistrosPorRecinto(String recinto, LocalDateTime fechaFinalProceso) {
+		return archivoDao.buscarTotalRegistrosPorRecinto(recinto, fechaFinalProceso);
 	}
 
 }

@@ -13,17 +13,17 @@ import com.albo.digitalizacion.model.TipoDocumento;
 @Repository
 public interface IGeneralDAO extends JpaRepository<General, Long> {
 
-	@Query("FROM General gral WHERE gral.cnsCodConc = :cnsCodConc " + "AND gral.cnsEmisor = :cnsEmisor "
-			+ "AND gral.tipoDocumento = :tipoDocumento " + "AND gral.archivo.nomArchivo = :nombreArchivoDestino "
-			+ "AND gral.cnsAduTra = :cnsAduTra " + "AND gral.cnsNroTra = :cnsNroTra "
-			+ "AND gral.cnsFechaPro = :cnsFechaPro AND gral.cnsEstado = 'A'")
+	@Query("FROM General gral WHERE gral.cnsCodConc = :cnsCodConc AND gral.cnsEmisor = :cnsEmisor "
+			+ "AND gral.tipoDocumento = :tipoDocumento AND gral.archivo.nomArchivo = :nombreArchivoDestino "
+			+ "AND gral.cnsAduTra = :cnsAduTra AND gral.cnsNroTra = :cnsNroTra "
+			+ "AND gral.recinto = :recinto AND gral.cnsEstado = 'A'")
 	General buscarExistente(@Param("cnsCodConc") String cnsCodConc, @Param("cnsEmisor") String cnsEmisor,
 			@Param("tipoDocumento") TipoDocumento tipoDocumento,
 			@Param("nombreArchivoDestino") String nombreArchivoDestino, @Param("cnsAduTra") String cnsAduTra,
-			@Param("cnsNroTra") String cnsNroTra, @Param("cnsFechaPro") LocalDateTime cnsFechaPro);
+			@Param("cnsNroTra") String cnsNroTra, @Param("recinto") String recinto);
 
-	@Query("SELECT COUNT(*) as cantidad FROM General gral WHERE gral.cnsFechaPro = :fechaFinalProceso AND gral.cnsAduTra = :codRecinto")
+	@Query("SELECT COUNT(*) as cantidad FROM General gral WHERE gral.cnsFechaPro = :fechaFinalProceso AND gral.recinto = :recinto")
 	Integer buscarTotalRegistrosGeneral(@Param("fechaFinalProceso") LocalDateTime fechaFinalProceso,
-			@Param("codRecinto") String codRecinto);
+			@Param("recinto") String recinto);
 
 }

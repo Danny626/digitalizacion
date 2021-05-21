@@ -105,16 +105,63 @@ public class DigitalizacionController {
 	@Autowired
 	private IPrefijoService prefijoService;
 
-	@GetMapping(value = "/prueba", produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<?> inventarioPorNroInv() {
+	@PostMapping(value = "/prueba", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<?> prueba(@RequestParam("fechaProceso") String fechaProceso,
+			@RequestParam("mesesAtras") Integer mesesAtras) {
+
+		/* controlamos que los parametros de entrada no esten vacios */
+		if (mesesAtras == null) {
+			return new ResponseEntity<>("Parametros de entrada incorrectos", HttpStatus.BAD_REQUEST);
+		}
 
 		// armamos la respuesta con los totales obtenidos del proceso
-		LocalDateTime fechaFinalProceso = this.fechaStringToDate("31-03-2021 23:59:59");
-		ResultadoProcesoDTO resultadoProceso = this.calculoTotalesProceso(fechaFinalProceso, 10944, "TAM01", "422");
+//		LocalDateTime fechaFinalProceso = this.fechaStringToDate("31-03-2021 23:59:59");
+//		ResultadoProcesoDTO resultadoProceso = this.calculoTotalesProceso(fechaFinalProceso, 10944, "TAM01");
 
 //		JSONObject jo = new JSONObject(resultadoProceso);
 
-//		System.out.println(jo);
+		// armamos la fecha de proceso inicial del trimestre
+		LocalDateTime fechaInicioProceso = this.fechaStringToDate(fechaProceso + " 00:00:00");
+		fechaInicioProceso = fechaInicioProceso.minusMonths(3);
+		fechaInicioProceso = fechaInicioProceso.plusDays(1);
+		LOGGER.info("fechaInicioProceso: " + fechaInicioProceso);
+
+		// armamos la fecha de proceso inicial del trimestre para buscar inventarios
+		LocalDateTime fechaInicioProcesoInventarios = fechaInicioProceso.minusMonths(mesesAtras);
+		LOGGER.info("fechaInicioProcesoInventarios: " + fechaInicioProcesoInventarios);
+
+		// armamos la fecha de proceso final del trimestre
+		LocalDateTime fechaFinalProceso = this.fechaStringToDate(fechaProceso + " 23:59:59");
+		LOGGER.info("fechaFinalProceso: " + fechaFinalProceso);
+
+		return new ResponseEntity<Boolean>(true, HttpStatus.OK);
+	}
+
+	/**
+	 * servicio q obtiene el total de archivos procesados por recinto
+	 * 
+	 * @param recinto      recinto a consultar (CHB01)
+	 * @param fechaProceso fecha final del proceso de digitalización (31-03-2021)
+	 * @return retorna un objeto de tipo ResultadoProcesoDTO
+	 */
+	@GetMapping(value = "/resultadoRecinto", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<?> obtenerResultadoProcesoPorRecinto(@RequestParam("recinto") String recinto,
+			@RequestParam("fechaProceso") String fechaProceso) {
+
+		/* controlamos que los parametros de entrada no esten vacios */
+		if (recinto == "" || fechaProceso == "") {
+			return new ResponseEntity<>("Parametros de entrada incorrectos", HttpStatus.BAD_REQUEST);
+		}
+
+		// armamos la fecha de proceso final del trimestre
+		LocalDateTime fechaFinalProceso = this.fechaStringToDate(fechaProceso + " 23:59:59");
+
+		// consultamos la cantidad de archivos procesados
+		Integer cantidadProcesados = archivoService.buscarTotalRegistrosPorRecinto(recinto, fechaFinalProceso);
+
+		// armamos la respuesta con los totales obtenidos del proceso
+		ResultadoProcesoDTO resultadoProceso = this.calculoTotalesProceso(fechaFinalProceso, cantidadProcesados,
+				recinto);
 
 		return new ResponseEntity<ResultadoProcesoDTO>(resultadoProceso, HttpStatus.OK);
 	}
@@ -132,19 +179,19 @@ public class DigitalizacionController {
 	 * @param directorioOrigen  directorio donde se encuentran los archivos
 	 *                          digitalizados
 	 * @param directorioDestino directorio donde se copiaran los nuevos archivos
-	 * @param serialTramite     con qué letra se procesará las duis, dims
+	 * @param serialTramiteDim  con qué letra se procesará las duis, dims
 	 */
 	@PostMapping(value = "/procesarArchivos", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> procesarArchivos(@RequestParam("gestion") String gestion,
 			@RequestParam("trimestre") String trimestre, @RequestParam("recinto") String recinto,
-			@RequestParam("fechaProceso") String fechaProceso, @RequestParam("mesesAtras") String mesesAtras,
+			@RequestParam("fechaProceso") String fechaProceso, @RequestParam("mesesAtras") Integer mesesAtras,
 			@RequestParam("directorioOrigen") String directorioOrigen,
 			@RequestParam("directorioDestino") String directorioDestino,
 			@RequestParam("serialTramiteDim") String serialTramiteDim) {
 
 		/* controlamos que los parametros de entrada no esten vacios */
 		if (gestion == "" || trimestre == "" || recinto == "" || directorioOrigen == "" || directorioDestino == ""
-				|| fechaProceso == "" || mesesAtras == "") {
+				|| fechaProceso == "" || mesesAtras == null) {
 			return new ResponseEntity<>("Parametros de entrada incorrectos", HttpStatus.BAD_REQUEST);
 		}
 
@@ -174,6 +221,10 @@ public class DigitalizacionController {
 			fechaInicioProceso = fechaInicioProceso.plusDays(1);
 			LOGGER.info("fechaInicioProceso: " + fechaInicioProceso);
 
+			// armamos la fecha de proceso inicial del trimestre para buscar inventarios
+			LocalDateTime fechaInicioProcesoInventarios = fechaInicioProceso.minusMonths(mesesAtras);
+			LOGGER.info("fechaInicioProcesoInventarios: " + fechaInicioProcesoInventarios);
+
 			// armamos la fecha de proceso final del trimestre
 			LocalDateTime fechaFinalProceso = this.fechaStringToDate(fechaProceso + " 23:59:59");
 			LOGGER.info("fechaFinalProceso: " + fechaFinalProceso);
@@ -195,7 +246,7 @@ public class DigitalizacionController {
 					// registramos el archivo en conflicto
 					String tdoc = nombreArch.substring(8, 11);
 					Archivo archivo = this.registrarArchivo(nombreArch, null, fechaFinalProceso, directorioOrigen, null,
-							true);
+							true, recinto);
 
 					// buscamos el tipo de documento de acuerdo al codigo
 					TipoDocumento tipoDocumento = tipoDocumentoService.findById(tdoc).get();
@@ -216,19 +267,20 @@ public class DigitalizacionController {
 				if (nombreArch.charAt(0) == 'I') {
 
 					ArchivoResultadoDTO archivoResultado = this.copiarRenombrarArchivoInventario(nombreArch,
-							directorioOrigen, pathDestino, recinto, fechaInicioProceso, fechaFinalProceso);
+							directorioOrigen, pathDestino, recinto, fechaInicioProcesoInventarios, fechaFinalProceso);
 
 					// verificamos si existió algún error al copiarRenombrarArchivo
 					if (archivoResultado.getCodError() == null) {
 
 						Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
-								fechaFinalProceso, directorioOrigen, pathDestino, false);
+								fechaFinalProceso, directorioOrigen, pathDestino, false, recinto);
 
 						General general = this.registrarGeneral(archivoResultado.getTipoDocumento(),
 								archivoResultado.getNuevoNombreArchivo(),
 								archivoResultado.getInventario().getInvAduana(),
 								archivoResultado.getInventario().getInvParte(),
-								archivoResultado.getInventario().getInvFechaAnpr(), fechaFinalProceso, archivo);
+								archivoResultado.getInventario().getInvFechaAnpr(), fechaFinalProceso, archivo,
+								recinto);
 
 					} else {
 						// registramos el archivo en conflicto y el error
@@ -251,12 +303,12 @@ public class DigitalizacionController {
 					if (archivoResultado.getCodError() == null) {
 
 						Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
-								fechaFinalProceso, directorioOrigen, pathDestino, false);
+								fechaFinalProceso, directorioOrigen, pathDestino, false, recinto);
 
 						General general = this.registrarGeneral(archivoResultado.getTipoDocumento(),
 								archivoResultado.getNuevoNombreArchivo(), archivoResultado.getCodAduana(),
 								archivoResultado.getTramite(), archivoResultado.getFactura().getFactFecha(),
-								fechaFinalProceso, archivo);
+								fechaFinalProceso, archivo, recinto);
 
 						String tramite2 = archivoResultado.getFactura().getFacturaPK().getE3Cod() + " "
 								+ archivoResultado.getFactura().getFacturaPK().getE3ofSerie() + " "
@@ -266,7 +318,7 @@ public class DigitalizacionController {
 								archivoResultado.getCodAduana(), archivoResultado.getTramite(),
 								archivoResultado.getFactura().getFactFecha(), archivoResultado.getTipoDocumento2(),
 								archivoResultado.getFactura().getDestCod(), tramite2,
-								archivoResultado.getFactura().getFactFecha(), fechaFinalProceso);
+								archivoResultado.getFactura().getFactFecha(), fechaFinalProceso, recinto);
 					} else {
 						// registramos el archivo en conflicto y el error
 						ErrorProceso errorProceso = this.registraErrorProceso(nombreArch, fechaFinalProceso,
@@ -288,18 +340,18 @@ public class DigitalizacionController {
 					if (archivoResultado.getCodError() == null) {
 
 						Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
-								fechaFinalProceso, directorioOrigen, pathDestino, false);
+								fechaFinalProceso, directorioOrigen, pathDestino, false, recinto);
 
 						General general = this.registrarGeneral(archivoResultado.getTipoDocumento(),
 								archivoResultado.getNuevoNombreArchivo(), archivoResultado.getCodAduana(),
 								archivoResultado.getTramite(), archivoResultado.getDocArchivo().getDarFecha(),
-								fechaFinalProceso, archivo);
+								fechaFinalProceso, archivo, recinto);
 
 						Relacion relacion = this.registrarRelacion(archivoResultado.getTipoDocumento2(),
 								archivoResultado.getCodAduana(), archivoResultado.getTramite(),
 								archivoResultado.getDocArchivo().getDarFecha(), archivoResultado.getTipoDocumento(),
 								archivoResultado.getCodAduana(), archivoResultado.getTramite(),
-								archivoResultado.getDocArchivo().getDarFecha(), fechaFinalProceso);
+								archivoResultado.getDocArchivo().getDarFecha(), fechaFinalProceso, recinto);
 					} else {
 						// registramos el archivo en conflicto y el error
 						ErrorProceso errorProceso = this.registraErrorProceso(nombreArch, fechaFinalProceso,
@@ -314,19 +366,20 @@ public class DigitalizacionController {
 				// -- Parte de recepción
 				if (nombreArch.charAt(0) == 'P') {
 					ArchivoResultadoDTO archivoResultado = this.copiarRenombrarArchivoParteRecepcion(nombreArch,
-							directorioOrigen, pathDestino, recinto, fechaInicioProceso, fechaFinalProceso);
+							directorioOrigen, pathDestino, recinto, fechaInicioProcesoInventarios, fechaFinalProceso);
 
 					// verificamos si existió algún error al copiarRenombrarArchivo
 					if (archivoResultado.getCodError() == null) {
 
 						Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
-								fechaFinalProceso, directorioOrigen, pathDestino, false);
+								fechaFinalProceso, directorioOrigen, pathDestino, false, recinto);
 
 						General general = this.registrarGeneral(archivoResultado.getTipoDocumento(),
 								archivoResultado.getNuevoNombreArchivo(),
 								archivoResultado.getInventario().getInvAduana(),
 								archivoResultado.getInventario().getInvParte(),
-								archivoResultado.getInventario().getInvFechaAnpr(), fechaFinalProceso, archivo);
+								archivoResultado.getInventario().getInvFechaAnpr(), fechaFinalProceso, archivo,
+								recinto);
 					} else {
 						// registramos el archivo en conflicto y el error
 						ErrorProceso errorProceso = this.registraErrorProceso(nombreArch, fechaFinalProceso,
@@ -344,7 +397,7 @@ public class DigitalizacionController {
 
 			// armamos la respuesta con los totales obtenidos del proceso
 			ResultadoProcesoDTO resultadoProceso = this.calculoTotalesProceso(fechaFinalProceso, contadorProceso,
-					recinto, recintoRes.getRecCoda().toString());
+					recinto);
 
 			return new ResponseEntity<ResultadoProcesoDTO>(resultadoProceso, HttpStatus.OK);
 
@@ -479,7 +532,7 @@ public class DigitalizacionController {
 	 * (invParte modificado)
 	 **/
 	public ArchivoResultadoDTO copiarRenombrarArchivoInventario(String nombreArchivoOrigen, String pathOrigen,
-			String pathDestino, String invRecinto, LocalDateTime fechaInicioProceso, LocalDateTime fechaFinalProceso) {
+			String pathDestino, String recinto, LocalDateTime fechaInicioProceso, LocalDateTime fechaFinalProceso) {
 
 		ArchivoResultadoDTO archivoResultado = new ArchivoResultadoDTO();
 
@@ -494,7 +547,7 @@ public class DigitalizacionController {
 		// buscamos el parte correspondiente al nro de inventario en un intervalo de
 		// tiempo de inventarios registrados en bd (invFecha)
 		List<Inventario> listInventario = new ArrayList<>();
-		listInventario = inventarioService.buscarPorNroInventarioNoConsolidado(nroInventario, invRecinto,
+		listInventario = inventarioService.buscarPorNroInventarioNoConsolidado(nroInventario, recinto,
 				fechaInicioProceso, fechaFinalProceso);
 
 		// si no existe el parte correspondiente (codError.E05)
@@ -524,8 +577,7 @@ public class DigitalizacionController {
 
 		// verificamos si el registro ya existe en General (codError.E06)
 		Optional<General> optionalGeneral = this.buscaGeneralExistente(nitConcesionario, nitConcesionario,
-				tipoDocumento, nuevoNombreArchivo, inventario.getInvAduana(), inventario.getInvParte(),
-				fechaFinalProceso);
+				tipoDocumento, nuevoNombreArchivo, inventario.getInvAduana(), inventario.getInvParte(), recinto);
 
 		if (optionalGeneral.isPresent()) {
 			archivoResultado.setCodError("E06");
@@ -584,7 +636,7 @@ public class DigitalizacionController {
 		// armamos el tramite de acuerdo a como va en la tabla general
 		String tramite = gestion + " " + codAduana + " C 0" + nroArchivo;
 		Optional<General> optionalGeneral = this.buscaGeneralExistente(nitConcesionario, nitConcesionario,
-				tipoDocumento, nuevoNombreArchivo, codAduana, tramite, fechaFinalProceso);
+				tipoDocumento, nuevoNombreArchivo, codAduana, tramite, recinto);
 
 		if (optionalGeneral.isPresent()) {
 			archivoResultado.setCodError("E06");
@@ -628,7 +680,7 @@ public class DigitalizacionController {
 		// buscamos si la relación ya existe registrada (codError.E15)
 		Optional<Relacion> optionalRelacion = this.buscaRelacionExistente(codAduana, tramite, nitConcesionario,
 				factura.getFactFecha(), factura.getDestCod(), tramite2, nitConcesionario, factura.getFactFecha(),
-				tipoDocumento, tipoDocumento2);
+				tipoDocumento, tipoDocumento2, recinto);
 
 		if (optionalRelacion.isPresent()) {
 			archivoResultado.setCodError("E15");
@@ -744,7 +796,7 @@ public class DigitalizacionController {
 		// armamos el tramite de acuerdo a como va en la tabla general
 		String tramite = gestion + " " + codAduana + " " + serialTramiteDim + " " + nroArchivo;
 		Optional<General> optionalGeneral = this.buscaGeneralExistente(nitConcesionario, nitConcesionario,
-				tipoDocumento2, nuevoNombreArchivo, codAduana, tramite, fechaFinalProceso);
+				tipoDocumento2, nuevoNombreArchivo, codAduana, tramite, recinto);
 
 		if (optionalGeneral.isPresent()) {
 			archivoResultado.setCodError("E06");
@@ -765,7 +817,7 @@ public class DigitalizacionController {
 		// buscamos si la relación ya existe registrada (codError.E15)
 		Optional<Relacion> optionalRelacion = this.buscaRelacionExistente(codAduana, tramite, nitConcesionario,
 				docArchivoOptional.get().getDarFecha(), codAduana, tramite, nitConcesionario,
-				docArchivoOptional.get().getDarFecha(), tipoDocumento1, tipoDocumento2);
+				docArchivoOptional.get().getDarFecha(), tipoDocumento1, tipoDocumento2, recinto);
 
 		if (optionalRelacion.isPresent()) {
 			archivoResultado.setCodError("E15");
@@ -805,7 +857,7 @@ public class DigitalizacionController {
 	 * nombre (invParte modificado)
 	 **/
 	public ArchivoResultadoDTO copiarRenombrarArchivoParteRecepcion(String nombreArchivoOrigen, String pathOrigen,
-			String pathDestino, String invRecinto, LocalDateTime fechaProcesoInicio, LocalDateTime fechaFinalProceso) {
+			String pathDestino, String recinto, LocalDateTime fechaProcesoInicio, LocalDateTime fechaFinalProceso) {
 
 		ArchivoResultadoDTO archivoResultado = new ArchivoResultadoDTO();
 
@@ -820,8 +872,8 @@ public class DigitalizacionController {
 		// buscamos el parte correspondiente al nro de inventario en un intervalo de
 		// tiempo de inventarios registrados en bd (invFecha)
 		List<Inventario> listInventario = new ArrayList<>();
-		listInventario = inventarioService.buscarPorNroInventarioConsolidado(nroInventario, invRecinto,
-				fechaProcesoInicio, fechaFinalProceso, "CON");
+		listInventario = inventarioService.buscarPorNroInventarioConsolidado(nroInventario, recinto, fechaProcesoInicio,
+				fechaFinalProceso, "CON");
 
 		// si no existe el parte correspondiente (codError.E05)
 		if (listInventario.size() == 0) {
@@ -850,8 +902,7 @@ public class DigitalizacionController {
 
 		// verificamos si el registro ya existe en General (codError.E06)
 		Optional<General> optionalGeneral = this.buscaGeneralExistente(nitConcesionario, nitConcesionario,
-				tipoDocumento, nuevoNombreArchivo, inventario.getInvAduana(), inventario.getInvParte(),
-				fechaFinalProceso);
+				tipoDocumento, nuevoNombreArchivo, inventario.getInvAduana(), inventario.getInvParte(), recinto);
 
 		if (optionalGeneral.isPresent()) {
 			archivoResultado.setCodError("E06");
@@ -886,7 +937,7 @@ public class DigitalizacionController {
 	 * @return
 	 */
 	public Archivo registrarArchivo(String nombreArchivoOrigen, String nuevoNombreArchivo, LocalDateTime fechaProceso,
-			String pathOrigen, String pathDestino, Boolean onError) {
+			String pathOrigen, String pathDestino, Boolean onError, String recinto) {
 
 		Archivo archivo = new Archivo();
 
@@ -895,9 +946,11 @@ public class DigitalizacionController {
 			archivo.setFecPro(fechaProceso);
 			archivo.setOrigen(pathOrigen + "//" + nombreArchivoOrigen);
 			archivo.setDestin(pathDestino + "//" + nuevoNombreArchivo);
+			archivo.setRecinto(recinto);
 		} else {
 			archivo.setFecPro(fechaProceso);
 			archivo.setOrigen(pathOrigen + "//" + nombreArchivoOrigen);
+			archivo.setRecinto(recinto);
 		}
 
 		return this.archivoService.saveOrUpdate(archivo);
@@ -920,7 +973,7 @@ public class DigitalizacionController {
 	 * @return
 	 */
 	public General registrarGeneral(TipoDocumento tipoDoc, String nuevoNombreArchivo, String codAduana, String tramite,
-			LocalDateTime fechaEmision, LocalDateTime fechaProceso, Archivo archivo) {
+			LocalDateTime fechaEmision, LocalDateTime fechaProceso, Archivo archivo, String recinto) {
 
 		General general = new General();
 		general.setCnsCodConc(nitConcesionario);
@@ -932,6 +985,7 @@ public class DigitalizacionController {
 		general.setCnsFechaEmi(fechaEmision);
 		general.setCnsFechaPro(fechaProceso);
 		general.setCnsEstado("A");
+		general.setRecinto(recinto);
 
 		return this.generalService.saveOrUpdate(general);
 	}
@@ -944,7 +998,7 @@ public class DigitalizacionController {
 	 */
 	public Relacion registrarRelacion(TipoDocumento tipoDoc1, String codAdu1, String tra1, LocalDateTime fechaEmi1,
 			TipoDocumento tipoDoc2, String codAdu2, String tra2, LocalDateTime fechaEmi2,
-			LocalDateTime fechaFinalProceso) {
+			LocalDateTime fechaFinalProceso, String recinto) {
 
 		Relacion relacion = new Relacion();
 		relacion.setTipoDocumento1(tipoDoc1);
@@ -959,6 +1013,7 @@ public class DigitalizacionController {
 		relacion.setCnsFechaEmi2(fechaEmi2);
 		relacion.setCnsEstado("A");
 		relacion.setFecPro(fechaFinalProceso);
+		relacion.setRecinto(recinto);
 
 		return this.relacionService.saveOrUpdate(relacion);
 	}
@@ -1008,10 +1063,10 @@ public class DigitalizacionController {
 	 * funcion q revisa si el registro ya existe en General return null si no existe
 	 */
 	public Optional<General> buscaGeneralExistente(String cnsCodConc, String cnsEmisor, TipoDocumento tipoDocumento,
-			String nombreArchivoDestino, String cnsAduTra, String cnsNroTra, LocalDateTime cnsFechaPro) {
+			String nombreArchivoDestino, String cnsAduTra, String cnsNroTra, String recinto) {
 
 		Optional<General> optionalGeneral = this.generalService.buscarExistente(cnsCodConc, cnsEmisor, tipoDocumento,
-				nombreArchivoDestino, cnsAduTra, cnsNroTra, cnsFechaPro);
+				nombreArchivoDestino, cnsAduTra, cnsNroTra, recinto);
 
 		return optionalGeneral;
 	}
@@ -1022,10 +1077,11 @@ public class DigitalizacionController {
 	 */
 	public Optional<Relacion> buscaRelacionExistente(String cnsAduTra1, String cnsNroTra1, String cnsEmisor1,
 			LocalDateTime cnsFechaEmi1, String cnsAduTra2, String cnsNroTra2, String cnsEmisor2,
-			LocalDateTime cnsFechaEmi2, TipoDocumento tipoDocumento1, TipoDocumento tipoDocumento2) {
+			LocalDateTime cnsFechaEmi2, TipoDocumento tipoDocumento1, TipoDocumento tipoDocumento2, String recinto) {
 
 		Optional<Relacion> optionalRelacion = relacionService.buscarExistente(cnsAduTra1, cnsNroTra1, cnsEmisor1,
-				cnsFechaEmi1, cnsAduTra2, cnsNroTra2, cnsEmisor2, cnsFechaEmi2, tipoDocumento1, tipoDocumento2);
+				cnsFechaEmi1, cnsAduTra2, cnsNroTra2, cnsEmisor2, cnsFechaEmi2, tipoDocumento1, tipoDocumento2,
+				recinto);
 
 		return optionalRelacion;
 	}
@@ -1037,7 +1093,8 @@ public class DigitalizacionController {
 			String directorioOrigen, String recinto, ArchivoResultadoDTO archivoResultado) {
 
 		// registramos el archivo en conflicto
-		Archivo archivo = this.registrarArchivo(nombreArch, null, fechaFinalProceso, directorioOrigen, null, true);
+		Archivo archivo = this.registrarArchivo(nombreArch, null, fechaFinalProceso, directorioOrigen, null, true,
+				recinto);
 
 		// registramos el error
 		ErrorProceso errorProceso = this.registrarErrorProceso(recinto, archivoResultado.getTipoDocumento(),
@@ -1058,14 +1115,14 @@ public class DigitalizacionController {
 	 * función que obtiene los totales del resultado final del proceso
 	 */
 	public ResultadoProcesoDTO calculoTotalesProceso(LocalDateTime fechaFinalProceso, int totalArchivosProcesados,
-			String recinto, String codRecinto) {
+			String recinto) {
 		ResultadoProcesoDTO resultadoProceso = new ResultadoProcesoDTO();
 
 		List<CantidadTipoErrorDTO> listaCantidadTipoError = tipoErrorService.buscarTotalPorTipoError(fechaFinalProceso,
 				recinto);
 		Integer totalRegistrosError = errorProcesoService.buscarTotalRegistrosError(fechaFinalProceso, recinto);
-		Integer totalRegistrosGeneral = generalService.buscarTotalRegistrosGeneral(fechaFinalProceso, codRecinto);
-		Integer totalRegistrosRelacion = relacionService.buscarTotalRegistrosRelacion(fechaFinalProceso, codRecinto);
+		Integer totalRegistrosGeneral = generalService.buscarTotalRegistrosGeneral(fechaFinalProceso, recinto);
+		Integer totalRegistrosRelacion = relacionService.buscarTotalRegistrosRelacion(fechaFinalProceso, recinto);
 
 		resultadoProceso.setListaCantidadTipoError(listaCantidadTipoError);
 		resultadoProceso.setTotalArchivosProcesados(totalArchivosProcesados);

@@ -15,7 +15,7 @@ public interface IInventarioDAO extends JpaRepository<Inventario, String> {
 
 	@Query("FROM Inventario inv WHERE inv.invNro = :invNro AND inv.invRecinto.recCod = :invRecinto "
 			+ "AND inv.invFecha BETWEEN :fechaProcesoInicio AND :fechaProcesoFin "
-			+ "AND inv.invEstado = 'ACT' AND inv.invConsol IS NULL")
+			+ "AND inv.invEstado = 'ACT' AND (inv.invConsol IS NULL OR inv.invConsol != 'CON')")
 	List<Inventario> buscarPorNroInventarioNoConsolidado(@Param("invNro") String invNro,
 			@Param("invRecinto") String invRecinto, @Param("fechaProcesoInicio") LocalDateTime fechaProcesoInicio,
 			@Param("fechaProcesoFin") LocalDateTime fechaProcesoFin);

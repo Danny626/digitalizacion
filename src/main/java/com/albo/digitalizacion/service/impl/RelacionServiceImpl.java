@@ -44,18 +44,18 @@ public class RelacionServiceImpl implements IRelacionService {
 	@Override
 	public Optional<Relacion> buscarExistente(String cnsAduTra1, String cnsNroTra1, String cnsEmisor1,
 			LocalDateTime cnsFechaEmi1, String cnsAduTra2, String cnsNroTra2, String cnsEmisor2,
-			LocalDateTime cnsFechaEmi2, TipoDocumento tipoDocumento1, TipoDocumento tipoDocumento2) {
+			LocalDateTime cnsFechaEmi2, TipoDocumento tipoDocumento1, TipoDocumento tipoDocumento2, String recinto) {
 
 		Optional<Relacion> optRelacion = Optional
 				.ofNullable(relacionDao.buscarExistente(cnsAduTra1, cnsNroTra1, cnsEmisor1, cnsFechaEmi1, cnsAduTra2,
-						cnsNroTra2, cnsEmisor2, cnsFechaEmi2, tipoDocumento1, tipoDocumento2));
+						cnsNroTra2, cnsEmisor2, cnsFechaEmi2, tipoDocumento1, tipoDocumento2, recinto));
 
 		return optRelacion;
 	}
 
 	@Override
-	public Integer buscarTotalRegistrosRelacion(LocalDateTime fechaFinalProceso, String codRecinto) {
-		return relacionDao.buscarTotalRegistrosRelacion(fechaFinalProceso, codRecinto);
+	public Integer buscarTotalRegistrosRelacion(LocalDateTime fechaFinalProceso, String recinto) {
+		return relacionDao.buscarTotalRegistrosRelacion(fechaFinalProceso, recinto);
 	}
 
 }

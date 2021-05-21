@@ -9,7 +9,7 @@ import com.albo.digitalizacion.model.TipoDocumento;
 public interface IGeneralService extends IService<General, Long> {
 
 	Optional<General> buscarExistente(String cnsCodConc, String cnsEmisor, TipoDocumento tipoDocumento,
-			String nombreArchivoDestino, String cnsAduTra, String cnsNroTra, LocalDateTime cnsFechaPro);
+			String nombreArchivoDestino, String cnsAduTra, String cnsNroTra, String recinto);
 
-	Integer buscarTotalRegistrosGeneral(LocalDateTime fechaFinalProceso, String codRecinto);
+	Integer buscarTotalRegistrosGeneral(LocalDateTime fechaFinalProceso, String recinto);
 }

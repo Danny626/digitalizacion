@@ -67,6 +67,9 @@ public class Relacion implements Serializable {
 	@Column(name = "fec_pro")
 	private LocalDateTime fecPro;
 
+	@Column(name = "recinto", length = 10)
+	private String recinto;
+
 	public Long getId() {
 		return id;
 	}
@@ -171,4 +174,11 @@ public class Relacion implements Serializable {
 		this.fecPro = fecPro;
 	}
 
+	public String getRecinto() {
+		return recinto;
+	}
+
+	public void setRecinto(String recinto) {
+		this.recinto = recinto;
+	}
 }
