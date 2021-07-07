@@ -1,6 +1,7 @@
 package com.albo.digitalizacion.service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import com.albo.digitalizacion.model.General;
@@ -12,4 +13,6 @@ public interface IGeneralService extends IService<General, Long> {
 			String nombreArchivoDestino, String cnsAduTra, String cnsNroTra, String recinto);
 
 	Integer buscarTotalRegistrosGeneral(LocalDateTime fechaFinalProceso, String recinto);
+
+	List<General> listarxFecha(LocalDateTime fechaFinalProceso);
 }

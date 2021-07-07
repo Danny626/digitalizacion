@@ -58,4 +58,9 @@ public class RelacionServiceImpl implements IRelacionService {
 		return relacionDao.buscarTotalRegistrosRelacion(fechaFinalProceso, recinto);
 	}
 
+	@Override
+	public List<Relacion> listarxFecha(LocalDateTime fechaFinalProceso) {
+		return relacionDao.listarxFecha(fechaFinalProceso, fechaFinalProceso);
+	}
+
 }

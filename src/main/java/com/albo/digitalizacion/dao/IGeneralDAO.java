@@ -1,6 +1,7 @@
 package com.albo.digitalizacion.dao;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -25,5 +26,8 @@ public interface IGeneralDAO extends JpaRepository<General, Long> {
 	@Query("SELECT COUNT(*) as cantidad FROM General gral WHERE gral.cnsFechaPro = :fechaFinalProceso AND gral.recinto = :recinto")
 	Integer buscarTotalRegistrosGeneral(@Param("fechaFinalProceso") LocalDateTime fechaFinalProceso,
 			@Param("recinto") String recinto);
+
+	@Query(value = "FROM General gral WHERE gral.cnsFechaPro = :fechaFinalProceso")
+	List<General> listarxFecha(@Param("fechaFinalProceso") LocalDateTime fechaFinalProceso);
 
 }

@@ -1,6 +1,7 @@
 package com.albo.digitalizacion.dao;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -28,5 +29,11 @@ public interface IRelacionDAO extends JpaRepository<Relacion, Long> {
 	@Query("SELECT COUNT(*) as cantidad FROM Relacion rel WHERE rel.fecPro = :fechaFinalProceso AND rel.recinto = :recinto")
 	Integer buscarTotalRegistrosRelacion(@Param("fechaFinalProceso") LocalDateTime fechaFinalProceso,
 			@Param("recinto") String recinto);
+
+	@Query("FROM Relacion rel WHERE rel.id "
+			+ "IN (SELECT DISTINCT r.id FROM Relacion r, General g WHERE (g.tipoDocumento = r.tipoDocumento1 and g.cnsAduTra = r.cnsAduTra1 and g.cnsNroTra = r.cnsNroTra1 and g.cnsEmisor = r.cnsEmisor1 and g.cnsFechaEmi = r.cnsFechaEmi1 and g.cnsFechaPro = :fechaFinalProceso1) "
+			+ "OR (g.tipoDocumento = r.tipoDocumento2 and g.cnsAduTra = r.cnsAduTra2 and g.cnsNroTra = r.cnsNroTra2 and g.cnsEmisor = r.cnsEmisor2 and g.cnsFechaEmi = r.cnsFechaEmi2 and g.cnsFechaPro = :fechaFinalProceso2))")
+	List<Relacion> listarxFecha(@Param("fechaFinalProceso1") LocalDateTime fechaFinalProceso1,
+			@Param("fechaFinalProceso2") LocalDateTime fechaFinalProceso2);
 
 }

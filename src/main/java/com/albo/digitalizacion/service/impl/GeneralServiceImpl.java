@@ -56,4 +56,9 @@ public class GeneralServiceImpl implements IGeneralService {
 		return generalDao.buscarTotalRegistrosGeneral(fechaFinalProceso, recinto);
 	}
 
+	@Override
+	public List<General> listarxFecha(LocalDateTime fechaFinalProceso) {
+		return generalDao.listarxFecha(fechaFinalProceso);
+	}
+
 }
