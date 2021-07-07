@@ -10,4 +10,6 @@ public interface ITotalService extends IService<Total, Long> {
 
 	List<TipoDocContGeneralDTO> buscarDistintos(LocalDateTime fechaProceso);
 
+	List<Total> listaxFecha(LocalDateTime fechaFinalProceso);
+
 }

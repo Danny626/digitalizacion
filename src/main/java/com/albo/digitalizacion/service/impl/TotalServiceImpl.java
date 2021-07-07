@@ -46,4 +46,9 @@ public class TotalServiceImpl implements ITotalService {
 		return totalDao.buscarDistintos(fechaProceso);
 	}
 
+	@Override
+	public List<Total> listaxFecha(LocalDateTime fechaFinalProceso) {
+		return totalDao.listaxFecha(fechaFinalProceso);
+	}
+
 }

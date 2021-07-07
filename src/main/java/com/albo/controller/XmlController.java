@@ -28,11 +28,13 @@ import org.w3c.dom.Document;
 
 import com.albo.digitalizacion.model.General;
 import com.albo.digitalizacion.model.Relacion;
+import com.albo.digitalizacion.model.Total;
 import com.albo.digitalizacion.service.IGeneralService;
 import com.albo.digitalizacion.service.IRelacionService;
 import com.albo.digitalizacion.service.ITotalService;
 import com.albo.util.XmlGeneralUtil;
 import com.albo.util.XmlRelacionUtil;
+import com.albo.util.XmlTotalUtil;
 
 @RestController
 @RequestMapping("/xml")
@@ -91,12 +93,18 @@ public class XmlController {
 
 		String resultRelacion = this.crearXmlRelacion(fechaFinalProceso, nombreArchivoRelacion, pathDestino);
 
+		String resultTotal = this.crearXmlTotal(fechaFinalProceso, nombreArchivoTotal, pathDestino);
+
 		if (resultGeneral == "ERROR") {
 			return new ResponseEntity<String>("Error generando el XML General", HttpStatus.OK);
 		}
 
 		if (resultRelacion == "ERROR") {
 			return new ResponseEntity<String>("Error generando el XML Relacion", HttpStatus.OK);
+		}
+
+		if (resultTotal == "ERROR") {
+			return new ResponseEntity<String>("Error generando el XML Total", HttpStatus.OK);
 		}
 
 		return new ResponseEntity<String>("", HttpStatus.OK);
@@ -180,6 +188,36 @@ public class XmlController {
 			transformer.transform(source, result);
 		} catch (ParserConfigurationException | TransformerException | TransformerFactoryConfigurationError e) {
 			LOGGER.error("Error creando archivo XML: RELACION");
+			e.printStackTrace();
+			return "ERROR";
+		}
+
+		return "OK";
+	}
+
+	// crea el archivo XML Total
+	public String crearXmlTotal(LocalDateTime fechaFinalProceso, String nombreArchivoTotal, String pathArchivo) {
+		List<Total> listaTotalTrim = totalService.listaxFecha(fechaFinalProceso);
+
+		if (listaTotalTrim.isEmpty() || listaTotalTrim.size() == 0 || listaTotalTrim == null) {
+			LOGGER.error("Error cargando lista: TOTAL");
+			return "ERROR";
+		}
+
+		// generamos el objeto document XML
+		XmlTotalUtil xmlTotalUtil = new XmlTotalUtil();
+
+		try {
+			Document document = xmlTotalUtil.generaDocumentTotal(listaTotalTrim);
+
+			// creamos el archivo
+			Source source = new DOMSource(document);
+
+			Result result = new StreamResult(new java.io.File(pathArchivo + nombreArchivoTotal + ".xml"));
+			Transformer transformer = TransformerFactory.newInstance().newTransformer();
+			transformer.transform(source, result);
+		} catch (ParserConfigurationException | TransformerException | TransformerFactoryConfigurationError e) {
+			LOGGER.error("Error creando archivo XML: TOTAL");
 			e.printStackTrace();
 			return "ERROR";
 		}
