@@ -121,9 +121,10 @@ public class DigitalizacionController {
 //		JSONObject jo = new JSONObject(resultadoProceso);
 
 		// armamos la fecha de proceso inicial del trimestre
+		// armamos la fecha de proceso inicial del trimestre
 		LocalDateTime fechaInicioProceso = this.fechaStringToDate(fechaProceso + " 00:00:00");
 		fechaInicioProceso = fechaInicioProceso.minusMonths(3);
-		fechaInicioProceso = fechaInicioProceso.plusDays(1);
+		fechaInicioProceso = fechaInicioProceso.plusDays(2);
 		LOGGER.info("fechaInicioProceso: " + fechaInicioProceso);
 
 		// armamos la fecha de proceso inicial del trimestre para buscar inventarios
@@ -218,7 +219,7 @@ public class DigitalizacionController {
 			// armamos la fecha de proceso inicial del trimestre
 			LocalDateTime fechaInicioProceso = this.fechaStringToDate(fechaProceso + " 00:00:00");
 			fechaInicioProceso = fechaInicioProceso.minusMonths(3);
-			fechaInicioProceso = fechaInicioProceso.plusDays(1);
+			fechaInicioProceso = fechaInicioProceso.plusDays(2);
 			LOGGER.info("fechaInicioProceso: " + fechaInicioProceso);
 
 			// armamos la fecha de proceso inicial del trimestre para buscar inventarios

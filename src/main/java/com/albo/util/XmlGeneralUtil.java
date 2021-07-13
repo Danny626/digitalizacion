@@ -24,6 +24,25 @@ public class XmlGeneralUtil {
 		// raiz rowset
 		Document document = builder.newDocument();
 
+//		String cabecera = "<!DOCTYPE main ["
+//				+ "<!ELEMENT main (DATA_RECORD*)>"
+//				+ "<!ELEMENT DATA_RECORD (CNS_CODCONC?,CNS_TIPODOC,CNS_EMISOR,CNS_NOMARCH?,CNS_ADUTRA,CNS_NROTRA,CNS_FECHA_EMI,CNS_FECHA_PRO?,CNS_ESTADO)+>"
+//				+ "<!ELEMENT CNS_CODCONC (#PCDATA)>"
+//				+ "<!ELEMENT CNS_TIPODOC (#PCDATA)>"
+//				+ "<!ELEMENT CNS_EMISOR (#PCDATA)>"
+//				+ "<!ELEMENT CNS_NOMARCH (#PCDATA)>"
+//				+ "<!ELEMENT CNS_ADUTRA (#PCDATA)>"
+//				+ "<!ELEMENT CNS_NROTRA (#PCDATA)>"
+//				+ "<!ELEMENT CNS_FECHA_EMI (#PCDATA)>"
+//				+ "<!ELEMENT CNS_FECHA_PRO (#PCDATA)>"
+//				+ "<!ELEMENT CNS_ESTADO (#PCDATA)>"
+//				+ "]>";
+//		
+//		cabecera = escapeMetaCharacters(cabecera);
+//		
+////		Element rowHead = document.createElement(cabecera);
+//		document.createAttribute(cabecera);
+
 		Element rowSet = document.createElement("main");
 		document.appendChild(rowSet);
 
@@ -67,12 +86,12 @@ public class XmlGeneralUtil {
 
 			// fecha emision
 			Element fechaEmision = document.createElement("CNS_FECHA_EMI");
-			fechaEmision.appendChild(document.createTextNode(g.getCnsFechaEmi().format(formatterDate) + "00:00:00"));
+			fechaEmision.appendChild(document.createTextNode(g.getCnsFechaEmi().format(formatterDate) + " 00:00:00"));
 			row.appendChild(fechaEmision);
 
 			// fecha proceso
 			Element fechaPro = document.createElement("CNS_FECHA_PRO");
-			fechaPro.appendChild(document.createTextNode(g.getCnsFechaPro().format(formatterDate) + "00:00:00"));
+			fechaPro.appendChild(document.createTextNode(g.getCnsFechaPro().format(formatterDate) + " 00:00:00"));
 			row.appendChild(fechaPro);
 
 			// estado
@@ -85,5 +104,17 @@ public class XmlGeneralUtil {
 		System.out.println(contadorReg + " registros General exportados en Total.");
 
 		return document;
+	}
+
+	public String escapeMetaCharacters(String inputString) {
+		final String[] metaCharacters = { "\\", "^", "$", "{", "}", "[", "]", "(", ")", ".", "*", "+", "?", "|", "<",
+				">", "-", "&", "%" };
+
+		for (int i = 0; i < metaCharacters.length; i++) {
+			if (inputString.contains(metaCharacters[i])) {
+				inputString = inputString.replace(metaCharacters[i], "\\" + metaCharacters[i]);
+			}
+		}
+		return inputString;
 	}
 }

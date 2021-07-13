@@ -89,11 +89,11 @@ public class XmlController {
 		String nombreArchivoRelacion = "r" + gestion + mesProceso + nitConcesionario15Char;
 		String nombreArchivoTotal = "t" + gestion + mesProceso + nitConcesionario15Char;
 
-		String resultGeneral = this.crearXmlGeneral(fechaFinalProceso, nombreArchivoGeneral, pathDestino);
+		String resultGeneral = this.crearXmlGeneral(fechaFinalProceso, nombreArchivoGeneral, pathDestino + "//");
 
-		String resultRelacion = this.crearXmlRelacion(fechaFinalProceso, nombreArchivoRelacion, pathDestino);
+		String resultRelacion = this.crearXmlRelacion(fechaFinalProceso, nombreArchivoRelacion, pathDestino + "//");
 
-		String resultTotal = this.crearXmlTotal(fechaFinalProceso, nombreArchivoTotal, pathDestino);
+		String resultTotal = this.crearXmlTotal(fechaFinalProceso, nombreArchivoTotal, pathDestino + "//");
 
 		if (resultGeneral == "ERROR") {
 			return new ResponseEntity<String>("Error generando el XML General", HttpStatus.OK);

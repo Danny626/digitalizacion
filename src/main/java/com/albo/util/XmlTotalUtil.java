@@ -23,6 +23,21 @@ public class XmlTotalUtil {
 
 		// raiz rowset
 		Document document = builder.newDocument();
+		
+//		String cabecera = "!DOCTYPE main ["
+//				+ "<!ELEMENT main (DATA_RECORD*)>"
+//				+ "<!ELEMENT DATA_RECORD (CNS_CODCON,CNS_TIPDOC,CNS_FECENV,CNS_ESTADO,CNS_CANTIDAD?)+>"
+//				+ "<!ELEMENT CNS_CODCON (#PCDATA)>"
+//				+ "<!ELEMENT CNS_TIPDOC (#PCDATA)>"
+//				+ "<!ELEMENT CNS_FECENV (#PCDATA)>"
+//				+ "<!ELEMENT CNS_ESTADO (#PCDATA)>"
+//				+ "<!ELEMENT CNS_CANTIDAD (#PCDATA)>"
+//				+ "]";
+//		
+//		cabecera = escapeMetaCharacters(cabecera);
+//		
+//		Element rowHead = document.createElement(cabecera);
+//		document.appendChild(rowHead);
 
 		Element rowSet = document.createElement("main");
 		document.appendChild(rowSet);
@@ -65,5 +80,16 @@ public class XmlTotalUtil {
 		System.out.println(contadorReg + " registros Total exportados en Total.");
 
 		return document;
+	}
+	
+	public String escapeMetaCharacters(String inputString){
+	    final String[] metaCharacters = {"\\","^","$","{","}","[","]","(",")",".","*","+","?","|","<",">","-","&","%"};
+
+	    for (int i = 0 ; i < metaCharacters.length ; i++){
+	        if(inputString.contains(metaCharacters[i])){
+	            inputString = inputString.replace(metaCharacters[i],"\\"+metaCharacters[i]);
+	        }
+	    }
+	    return inputString;
 	}
 }

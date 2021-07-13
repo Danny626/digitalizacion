@@ -24,6 +24,27 @@ public class XmlRelacionUtil {
 		// raiz rowset
 		Document document = builder.newDocument();
 
+//		String cabecera = "!DOCTYPE main ["
+//				+ "<!ELEMENT main (DATA_RECORD*)>"
+//				+ "<!ELEMENT DATA_RECORD (CNS_TIPODOC1,CNS_ADUTRA1,CNS_NROTRA1,CNS_EMISOR1,CNS_FECHAEMI1,CNS_TIPODOC2,CNS_ADUTRA2,CNS_NROTRA2,CNS_EMISOR2,CNS_FECHAEMI2,CNS_ESTADO)+>"
+//				+ "<!ELEMENT CNS_TIPODOC1 (#PCDATA)>"
+//				+ "<!ELEMENT CNS_ADUTRA1 (#PCDATA)>"
+//				+ "<!ELEMENT CNS_NROTRA1 (#PCDATA)>"
+//				+ "<!ELEMENT CNS_EMISOR1 (#PCDATA)>"
+//				+ "<!ELEMENT CNS_FECHAEMI1 (#PCDATA)>"
+//				+ "<!ELEMENT CNS_TIPODOC2 (#PCDATA)>"
+//				+ "<!ELEMENT CNS_ADUTRA2 (#PCDATA)>"
+//				+ "<!ELEMENT CNS_NROTRA2 (#PCDATA)>"
+//				+ "<!ELEMENT CNS_EMISOR2 (#PCDATA)>"
+//				+ "<!ELEMENT CNS_FECHAEMI2 (#PCDATA)>"
+//				+ "<!ELEMENT CNS_ESTADO (#PCDATA)>"
+//				+ "]";
+//				
+//		cabecera = escapeMetaCharacters(cabecera);
+//		
+//		Element rowHead = document.createElement(cabecera);
+//		document.appendChild(rowHead);
+
 		Element rowSet = document.createElement("main");
 		document.appendChild(rowSet);
 
@@ -66,13 +87,19 @@ public class XmlRelacionUtil {
 					}
 
 					nuevoNroTra1.append(parts[3]);
+				} else {
+
+					if (nroTra1.length() == 15) {
+						nuevoNroTra1.append(nroTra1);
+					}
 				}
 
 				if (nuevoNroTra1.toString().length() != 15) {
 					errorNroTra1++;
 					nuevoNroTra1.append("ERROR");
-					System.out.println("Error tamaño NROTRA1 (mayor a 15): " + r.getCnsNroTra1());
+					System.out.println("Error tamaño NROTRA1 (mayor a 15): " + nroTra1 + " en " + r.getCnsNroTra1());
 				}
+
 			}
 
 			nroTramite1.appendChild(document.createTextNode(nuevoNroTra1.toString()));
@@ -85,7 +112,7 @@ public class XmlRelacionUtil {
 
 			// fecha emision1
 			Element fechaEmision1 = document.createElement("CNS_FECHAEMI1");
-			fechaEmision1.appendChild(document.createTextNode(r.getCnsFechaEmi1().format(formatterDate) + "00:00:00"));
+			fechaEmision1.appendChild(document.createTextNode(r.getCnsFechaEmi1().format(formatterDate) + " 00:00:00"));
 			row.appendChild(fechaEmision1);
 
 			// tipo documento2
@@ -116,12 +143,17 @@ public class XmlRelacionUtil {
 					}
 
 					nuevoNroTra2.append(parts[3]);
+				} else {
+
+					if (nroTra2.length() == 15) {
+						nuevoNroTra2.append(nroTra2);
+					}
 				}
 
 				if (nuevoNroTra2.toString().length() != 15) {
 					errorNroTra2++;
 					nuevoNroTra2.append("ERROR");
-					System.out.println("Error NROTRA2 (mayor a 15): " + r.getCnsNroTra2());
+					System.out.println("Error NROTRA2 (mayor a 15): " + nroTra2 + " en " + r.getCnsNroTra2());
 				}
 			}
 
@@ -142,7 +174,7 @@ public class XmlRelacionUtil {
 				if (nuevoNroTra2.toString().length() != 17) {
 					errorNroTra2++;
 					nuevoNroTra2.append("ERROR");
-					System.out.println("Error NROTRA2: " + nuevoNroTra2.toString());
+					System.out.println("Error NROTRA2 (tipoDoc.380): " + nuevoNroTra2 + " en " + r.getTipoDocumento2());
 				}
 			}
 
@@ -156,7 +188,7 @@ public class XmlRelacionUtil {
 
 			// fecha emision2
 			Element fechaEmi2 = document.createElement("CNS_FECHAEMI2");
-			fechaEmi2.appendChild(document.createTextNode(r.getCnsFechaEmi2().format(formatterDate) + "00:00:00"));
+			fechaEmi2.appendChild(document.createTextNode(r.getCnsFechaEmi2().format(formatterDate) + " 00:00:00"));
 			row.appendChild(fechaEmi2);
 
 			// estado
@@ -172,5 +204,17 @@ public class XmlRelacionUtil {
 		System.out.println(contadorReg + " registros Relacion exportados en Total.");
 
 		return document;
+	}
+
+	public String escapeMetaCharacters(String inputString) {
+		final String[] metaCharacters = { "\\", "^", "$", "{", "}", "[", "]", "(", ")", ".", "*", "+", "?", "|", "<",
+				">", "-", "&", "%" };
+
+		for (int i = 0; i < metaCharacters.length; i++) {
+			if (inputString.contains(metaCharacters[i])) {
+				inputString = inputString.replace(metaCharacters[i], "\\" + metaCharacters[i]);
+			}
+		}
+		return inputString;
 	}
 }
