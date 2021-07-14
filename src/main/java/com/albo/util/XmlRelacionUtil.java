@@ -174,7 +174,7 @@ public class XmlRelacionUtil {
 				if (nuevoNroTra2.toString().length() != 17) {
 					errorNroTra2++;
 					nuevoNroTra2.append("ERROR");
-					System.out.println("Error NROTRA2 (tipoDoc.380): " + nuevoNroTra2 + " en " + r.getTipoDocumento2());
+					System.out.println("Error NROTRA2 (tipoDoc.380): " + nuevoNroTra2 + " en " + r.getCnsNroTra2());
 				}
 			}
 

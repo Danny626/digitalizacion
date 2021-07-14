@@ -61,7 +61,7 @@ public class XmlTotalUtil {
 
 			// fecha envio
 			Element fechaEnvio = document.createElement("CNS_FECENV");
-			fechaEnvio.appendChild(document.createTextNode(t.getCnsFecEnv().format(formatterDate) + "00:00:00"));
+			fechaEnvio.appendChild(document.createTextNode(t.getCnsFecEnv().format(formatterDate) + " 00:00:00"));
 			row.appendChild(fechaEnvio);
 
 			// estado

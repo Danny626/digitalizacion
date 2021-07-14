@@ -166,6 +166,130 @@ public class DigitalizacionController {
 
 		return new ResponseEntity<ResultadoProcesoDTO>(resultadoProceso, HttpStatus.OK);
 	}
+	
+	
+	
+	@PostMapping(value = "/procesarArchivosLpz", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<?> procesarArchivosLpz(@RequestParam("gestion") String gestion,
+			@RequestParam("trimestre") String trimestre, @RequestParam("recinto") String recinto,
+			@RequestParam("fechaProceso") String fechaProceso,
+			@RequestParam("directorioOrigen") String directorioOrigen,
+			@RequestParam("directorioDestino") String directorioDestino) {
+
+		/* controlamos que los parametros de entrada no esten vacios */
+		if (gestion == "" || trimestre == "" || recinto == "" || directorioOrigen == "" || directorioDestino == ""
+				|| fechaProceso == "" ) {
+			return new ResponseEntity<>("Parametros de entrada incorrectos", HttpStatus.BAD_REQUEST);
+		}
+		
+		// creamos el path de destino del proceso de digitalización para el recinto en
+		// cuestión
+		String pathDestino = this.creaPathDestino(recinto, trimestre, directorioDestino, gestion);
+
+		if (pathDestino == "error") {
+			return new ResponseEntity<>("Error creando el Path Destino", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		
+		try {
+
+			// cargamos los archivos del directorio seleccionado
+			List<File> listaArchivos = this.listaArchivosDirectorio(directorioOrigen);
+			Collections.sort(listaArchivos);
+
+			LOGGER.info("Cantidad archivos a procesar: " + listaArchivos.size());
+
+			// buscamos el codigo de aduana del recinto
+//			Recinto recintoRes = new Recinto();
+//			recintoRes = recintoService.findById(recinto).get();
+			
+			// codAduana LPZ
+			String codAduana = "000";
+
+			// armamos la fecha de proceso inicial del trimestre
+			LocalDateTime fechaInicioProceso = this.fechaStringToDate(fechaProceso + " 00:00:00");
+			fechaInicioProceso = fechaInicioProceso.minusMonths(3);
+			fechaInicioProceso = fechaInicioProceso.plusDays(2);
+			LOGGER.info("fechaInicioProceso: " + fechaInicioProceso);
+
+			// armamos la fecha de proceso final del trimestre
+			LocalDateTime fechaFinalProceso = this.fechaStringToDate(fechaProceso + " 23:59:59");
+			LOGGER.info("fechaFinalProceso: " + fechaFinalProceso);
+
+			int contadorProceso = 0;
+			
+			// recorremos los archivos cargados para procesarlos
+			for (File file : listaArchivos) {
+				String nombreArch = file.getName().toUpperCase();
+				contadorProceso++;
+				LOGGER.info(
+						contadorProceso + " de " + listaArchivos.size() + "." + " Procesando archivo: " + nombreArch);
+
+				// verificamos la nomenclatura
+				// TODO mejorar o no la nomenclatura o solo mencionarlos
+//				String codError = this.revisaNomenclatura(nombreArch);
+
+//				if (!codError.equals("")) {
+//					// registramos el archivo en conflicto
+//					String tdoc = nombreArch.substring(8, 11);
+//					Archivo archivo = this.registrarArchivo(nombreArch, null, fechaFinalProceso, directorioOrigen, null,
+//							true, recinto);
+//
+//					// buscamos el tipo de documento de acuerdo al codigo
+//					TipoDocumento tipoDocumento = tipoDocumentoService.findById(tdoc).get();
+//
+//					// registramos el error
+//					ErrorProceso errorProceso = this.registrarErrorProceso(recinto, tipoDocumento, codError, archivo,
+//							fechaFinalProceso);
+//
+//					LOGGER.error("Error al procesar: " + errorProceso.getArchivo().getOrigen() + " => "
+//							+ errorProceso.getTipoError().getCodError() + " "
+//							+ errorProceso.getTipoError().getDescripcion());
+//
+//					continue;
+//				}
+
+				// procesamos el archivo de acuerdo a su tipo
+				ArchivoResultadoDTO archivoResultado = this.copiarRenombrarArchivoLpz(nombreArch,
+						directorioOrigen, pathDestino, recinto, fechaInicioProceso, fechaFinalProceso);
+
+				// verificamos si existió algún error al copiarRenombrarArchivo
+				if (archivoResultado.getCodError() == null) {
+
+					Archivo archivo = this.registrarArchivo(nombreArch, archivoResultado.getNuevoNombreArchivo(),
+							fechaFinalProceso, directorioOrigen, pathDestino, false, recinto);
+
+					General general = this.registrarGeneral(archivoResultado.getTipoDocumento(),
+							archivoResultado.getNuevoNombreArchivo(),
+							codAduana,
+							archivoResultado.getTramite(),
+							fechaInicioProceso, fechaFinalProceso, archivo,
+							recinto);
+
+				} else {
+					// registramos el archivo en conflicto y el error
+					ErrorProceso errorProceso = this.registraErrorProceso(nombreArch, fechaFinalProceso,
+							directorioOrigen, recinto, archivoResultado);
+
+					LOGGER.error("Error al procesar: " + errorProceso.getArchivo().getOrigen() + " => "
+							+ errorProceso.getTipoError().getCodError() + " "
+							+ errorProceso.getTipoError().getDescripcion());
+				}
+
+			}
+
+			LOGGER.info("Proceso finalizado");
+
+			// armamos la respuesta con los totales obtenidos del proceso
+			ResultadoProcesoDTO resultadoProceso = this.calculoTotalesProceso(fechaFinalProceso, contadorProceso,
+					recinto);
+
+			return new ResponseEntity<ResultadoProcesoDTO>(resultadoProceso, HttpStatus.OK);
+			
+		} catch (Exception e) {
+			return new ResponseEntity<>(e, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	
+	}
 
 	/**
 	 * Proceso de digitalización (archivos)
@@ -318,7 +442,7 @@ public class DigitalizacionController {
 						Relacion relacion = this.registrarRelacion(archivoResultado.getTipoDocumento(),
 								archivoResultado.getCodAduana(), archivoResultado.getTramite(),
 								archivoResultado.getFactura().getFactFecha(), archivoResultado.getTipoDocumento2(),
-								archivoResultado.getFactura().getDestCod(), tramite2,
+								archivoResultado.getCodAduana(), tramite2,
 								archivoResultado.getFactura().getFactFecha(), fechaFinalProceso, recinto);
 					} else {
 						// registramos el archivo en conflicto y el error
@@ -680,7 +804,7 @@ public class DigitalizacionController {
 
 		// buscamos si la relación ya existe registrada (codError.E15)
 		Optional<Relacion> optionalRelacion = this.buscaRelacionExistente(codAduana, tramite, nitConcesionario,
-				factura.getFactFecha(), factura.getDestCod(), tramite2, nitConcesionario, factura.getFactFecha(),
+				factura.getFactFecha(), codAduana, tramite2, nitConcesionario, factura.getFactFecha(),
 				tipoDocumento, tipoDocumento2, recinto);
 
 		if (optionalRelacion.isPresent()) {
@@ -929,6 +1053,84 @@ public class DigitalizacionController {
 		archivoResultado.setTipoDocumento(tipoDocumento);
 
 		return archivoResultado;
+	}
+	
+	/**
+	 * función q copia archivos Lpz(B70, B71, B72, B73, C01, C03, C07)
+	 **/
+	public ArchivoResultadoDTO copiarRenombrarArchivoLpz(String nombreArchivoOrigen, String pathOrigen,
+			String pathDestino, String recinto, LocalDateTime fechaInicioProceso, LocalDateTime fechaFinalProceso) {
+
+		ArchivoResultadoDTO archivoResultado = new ArchivoResultadoDTO();
+
+		// obtenemos el nroInv del nombreArchivoOrigen
+		String[] nombreArchivoPartido = nombreArchivoOrigen.split("\\.");
+		String[] numeroNombreArchivo = nombreArchivoPartido[0].split("-");
+		String nroTramite = numeroNombreArchivo[0];
+
+		// buscamos el tipo de documento de acuerdo al codigo
+		TipoDocumento tipoDocumento = tipoDocumentoService.findById(numeroNombreArchivo[1]).get();
+
+		// buscamos el parte correspondiente al nro de inventario en un intervalo de
+		// tiempo de inventarios registrados en bd (invFecha)
+//		List<Inventario> listInventario = new ArrayList<>();
+//		listInventario = inventarioService.buscarPorNroInventarioNoConsolidado(nroInventario, recinto,
+//				fechaInicioProceso, fechaFinalProceso);
+//
+//		// si no existe el parte correspondiente (codError.E05)
+//		if (listInventario.size() == 0) {
+//			archivoResultado.setCodError("E05");
+//			archivoResultado.setTipoDocumento(tipoDocumento);
+//			return archivoResultado;
+//		}
+
+		// si existe más de un resultado en listInventario, devolvemos error
+		// (codError.E19)
+//		if (listInventario.size() > 1) {
+//			archivoResultado.setCodError("E19");
+//			archivoResultado.setTipoDocumento(tipoDocumento);
+//			return archivoResultado;
+//		}
+
+//		Inventario inventario = listInventario.get(0);
+
+		// eliminamos los caracteres especiales q pudiera tener la primera parte del
+		// nuevo nombre del archivo
+//		String nuevoNombreArchivoFisico = this.eliminaCaracteresEspeciales(inventario.getInvGestion()
+//				+ inventario.getInvAduana() + inventario.getInvNroreg() + inventario.getInvEmbarque());
+
+		// armamos el nuevo nombre q tendrá el archivo copiado
+//		String nuevoNombreArchivo = nuevoNombreArchivoFisico + "-" + numeroNombreArchivo[1] + ".tif";
+
+		// verificamos si el registro ya existe en General (codError.E06)
+		Optional<General> optionalGeneral = this.buscaGeneralExistente(nitConcesionario, nitConcesionario,
+				tipoDocumento, nombreArchivoOrigen, "000", nroTramite, recinto);
+
+		if (optionalGeneral.isPresent()) {
+			archivoResultado.setCodError("E06");
+			archivoResultado.setTipoDocumento(tipoDocumento);
+			return archivoResultado;
+		}
+
+		// copiamos el archivo con su nuevo nombre
+		try {
+			Path origenPath = Paths.get(pathOrigen + "//" + nombreArchivoOrigen);
+			Path destinoPath = Paths.get(pathDestino + "//" + nombreArchivoOrigen);
+
+			// NOTA. sobreescribe el fichero de destino si ya existe en el destino
+			Files.copy(origenPath, destinoPath, StandardCopyOption.REPLACE_EXISTING);
+		} catch (FileNotFoundException ex) {
+			LOGGER.log(Level.ERROR, ex.getMessage());
+		} catch (IOException ex) {
+			LOGGER.log(Level.ERROR, ex.getMessage());
+		}
+
+		archivoResultado.setNuevoNombreArchivo(nombreArchivoOrigen);
+		archivoResultado.setTipoDocumento(tipoDocumento);
+		archivoResultado.setTramite(nroTramite);
+
+		return archivoResultado;
+
 	}
 
 	/**
