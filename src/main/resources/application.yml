@@ -39,20 +39,4 @@ spring:
       username: COMPUSOFT
       password: ${PASSWORD_COMPUSOFT}
       hibernate-hbm2ddl-auto: none
-  mail:
-    default-encoding: UTF-8
-    host: ${HOST_MAIL}
-    username: ${USER_MAIL}
-    password: ${PASSWORD_MAIL}
-    port: 25
-    properties:
-      mail:
-        ssl:
-          enable: true
-        smtp:
-          auth: true
-          starttls:
-            enable: true       
-            required: true     
-    protocol: smtp
-    test-connection: false
+      
