@@ -685,9 +685,23 @@ public class DigitalizacionController {
 		// si existe más de un resultado en listInventario, devolvemos error
 		// (codError.E19)
 		if (listInventario.size() > 1) {
-			archivoResultado.setCodError("E19");
-			archivoResultado.setTipoDocumento(tipoDocumento);
-			return archivoResultado;
+			List<Inventario> invsGestionProceso = new ArrayList<>();
+			
+			for ( Inventario inv : listInventario ) {
+				
+				if ( inv.getInvFecha().getYear() == fechaFinalProceso.getYear() ) {
+					invsGestionProceso.add(inv);
+				}
+			}
+			
+			if ( invsGestionProceso.size() > 1 ) {
+				archivoResultado.setCodError("E19");
+				archivoResultado.setTipoDocumento(tipoDocumento);
+				return archivoResultado;
+			}
+			
+			listInventario = new ArrayList<Inventario>();
+			listInventario = invsGestionProceso;
 		}
 
 		Inventario inventario = listInventario.get(0);
@@ -785,9 +799,23 @@ public class DigitalizacionController {
 		// si existe más de un resultado en listFactura, devolvemos error
 		// (codError.E19)
 		if (listFactura.size() > 1) {
-			archivoResultado.setCodError("E19");
-			archivoResultado.setTipoDocumento(tipoDocumento);
-			return archivoResultado;
+			List<Factura> facsGestionProceso = new ArrayList<>();
+			
+			for ( Factura fac : listFactura ) {
+				
+				if ( fac.getFactFecha().getYear() == fechaFinalProceso.getYear() ) {
+					facsGestionProceso.add(fac);
+				}
+			}
+			
+			if ( facsGestionProceso.size() > 1 ) {
+				archivoResultado.setCodError("E19");
+				archivoResultado.setTipoDocumento(tipoDocumento);
+				return archivoResultado;
+			}
+			
+			listFactura = new ArrayList<>();
+			listFactura = facsGestionProceso;
 		}
 
 		Factura factura = listFactura.get(0);
@@ -1010,9 +1038,23 @@ public class DigitalizacionController {
 		// si existe más de un resultado en listInventario, devolvemos error
 		// (codError.E19)
 		if (listInventario.size() > 1) {
-			archivoResultado.setCodError("E19");
-			archivoResultado.setTipoDocumento(tipoDocumento);
-			return archivoResultado;
+			List<Inventario> invsGestionProceso = new ArrayList<>();
+			
+			for ( Inventario inv : listInventario ) {
+				
+				if ( inv.getInvFecha().getYear() == fechaFinalProceso.getYear() ) {
+					invsGestionProceso.add(inv);
+				}
+			}
+			
+			if ( invsGestionProceso.size() > 1 ) {
+				archivoResultado.setCodError("E19");
+				archivoResultado.setTipoDocumento(tipoDocumento);
+				return archivoResultado;
+			}
+			
+			listInventario = new ArrayList<Inventario>();
+			listInventario = invsGestionProceso;
 		}
 
 		Inventario inventario = listInventario.get(0);
