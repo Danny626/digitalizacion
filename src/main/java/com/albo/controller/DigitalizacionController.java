@@ -373,8 +373,14 @@ public class DigitalizacionController {
 					Archivo archivo = this.registrarArchivo(nombreArch, null, fechaFinalProceso, directorioOrigen, null,
 							true, recinto);
 
+					TipoDocumento tipoDocumento;
+					
 					// buscamos el tipo de documento de acuerdo al codigo
-					TipoDocumento tipoDocumento = tipoDocumentoService.findById(tdoc).get();
+					if (codError.equals("E03")) {
+						tipoDocumento = tipoDocumentoService.findById("ERROR").get();						
+					} else {
+						tipoDocumento = tipoDocumentoService.findById(tdoc).get();
+					}
 
 					// registramos el error
 					ErrorProceso errorProceso = this.registrarErrorProceso(recinto, tipoDocumento, codError, archivo,

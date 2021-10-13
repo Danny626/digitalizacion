@@ -55,9 +55,12 @@ public class XmlController {
 	private ITotalService totalService;
 
 	@PostMapping(value = "/generarXML", produces = "application/json")
-	public ResponseEntity<?> generaXML(@RequestParam("gestion") String gestion,
-			@RequestParam("fechaProceso") String fechaProceso, @RequestParam("trimestre") String trimestre,
-			@RequestParam("directorioDestino") String directorioDestino) {
+	public ResponseEntity<?> generaXML(
+			@RequestParam("gestion") String gestion,
+			@RequestParam("fechaProceso") String fechaProceso, 
+			@RequestParam("trimestre") String trimestre,
+			@RequestParam("directorioDestino") String directorioDestino,
+			@RequestParam("proceso") String proceso) {
 
 		/* controlamos que los parametros de entrada no esten vacios */
 		if (fechaProceso == "") {
@@ -84,27 +87,34 @@ public class XmlController {
 			nitConcesionario15Char = "0" + nitConcesionario15Char;
 		}
 
-		// armamos los nombres de los archivos
-		String nombreArchivoGeneral = "g" + gestion + mesProceso + nitConcesionario15Char;
-		String nombreArchivoRelacion = "r" + gestion + mesProceso + nitConcesionario15Char;
-		String nombreArchivoTotal = "t" + gestion + mesProceso + nitConcesionario15Char;
-
-//		String resultGeneral = this.crearXmlGeneral(fechaFinalProceso, nombreArchivoGeneral, pathDestino + "//");
-
-		String resultRelacion = this.crearXmlRelacion(fechaFinalProceso, nombreArchivoRelacion, pathDestino + "//");
-
-		String resultTotal = this.crearXmlTotal(fechaFinalProceso, nombreArchivoTotal, pathDestino + "//");
-
-//		if (resultGeneral == "ERROR") {
-//			return new ResponseEntity<String>("Error generando el XML General", HttpStatus.OK);
-//		}
-
-		if (resultRelacion == "ERROR") {
-			return new ResponseEntity<String>("Error generando el XML Relacion", HttpStatus.OK);
+		if ( proceso.equals("general") ) {
+			// armamos el nombre del archivo
+			String nombreArchivoGeneral = "g" + gestion + mesProceso + nitConcesionario15Char;
+			String resultGeneral = this.crearXmlGeneral(fechaFinalProceso, nombreArchivoGeneral, pathDestino + "//");
+			
+			if (resultGeneral == "ERROR") {
+				return new ResponseEntity<String>("Error generando el XML General", HttpStatus.OK);
+			}
+		}
+		
+		if ( proceso.equals("relacion") ) {
+			// armamos el nombre del archivo
+			String nombreArchivoRelacion = "r" + gestion + mesProceso + nitConcesionario15Char;
+			String resultRelacion = this.crearXmlRelacion(fechaFinalProceso, nombreArchivoRelacion, pathDestino + "//");
+			
+			if (resultRelacion == "ERROR") {
+				return new ResponseEntity<String>("Error generando el XML Relacion", HttpStatus.OK);
+			}
 		}
 
-		if (resultTotal == "ERROR") {
-			return new ResponseEntity<String>("Error generando el XML Total", HttpStatus.OK);
+		if ( proceso.equals("total") ) {
+			// armamos el nombre del archivo
+			String nombreArchivoTotal = "t" + gestion + mesProceso + nitConcesionario15Char;
+			String resultTotal = this.crearXmlTotal(fechaFinalProceso, nombreArchivoTotal, pathDestino + "//");
+			
+			if (resultTotal == "ERROR") {
+				return new ResponseEntity<String>("Error generando el XML Total", HttpStatus.OK);
+			}
 		}
 
 		return new ResponseEntity<String>("", HttpStatus.OK);
