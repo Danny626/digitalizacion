@@ -1,8 +1,11 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT}
+  address: ${SERVER_ADDRESS}
   servlet:
     context-path: /digitalizacion
 spring:
+  config:
+    import: optional:file:.env[.properties]
   output:
     ansi:
       enabled: ALWAYS
@@ -22,21 +25,21 @@ spring:
 #    open-in-view: false
   datasource:
     digitalizacion:
-      driver-class-name: org.${USERNAME}ql.Driver
-      jdbc-url: jdbc:${USERNAME}ql://${DB_HOST}/digitalizacion
+      driver-class-name: org.postgresql.Driver
+      jdbc-url: jdbc:postgresql://${DB_HOST}/${DB_SCHEMA}
       username: ${USERNAME}
       password: ${PASSWORD}
       hibernate-hbm2ddl-auto: update
     soa:
       driver-class-name: oracle.jdbc.OracleDriver
-      jdbc-url: jdbc:oracle:thin:@${DB_HOST_SOA_TAM}:1521:XE
-      username: SOA
+      jdbc-url: jdbc:oracle:thin:@${DB_HOST_SOA_TAM}:${DB_PORT_SOA}:${DB_SCHEMA_SOA}
+      username: ${USERNAME_SOA}
       password: ${PASSWORD_SOA}
       hibernate-hbm2ddl-auto: none
     compusoft:
       driver-class-name: oracle.jdbc.OracleDriver
-      jdbc-url: jdbc:oracle:thin:@${DB_HOST_SOA_TAM}:1521:XE
-      username: COMPUSOFT
+      jdbc-url: jdbc:oracle:thin:@${DB_HOST_COMPUSOFT}:${DB_PORT_COMPUSOFT}:${DB_SCHEMA_COMPUSOFT}
+      username: ${USERNAME_COMPUSOFT}
       password: ${PASSWORD_COMPUSOFT}
       hibernate-hbm2ddl-auto: none
       
